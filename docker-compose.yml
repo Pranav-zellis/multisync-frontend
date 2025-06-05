@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      # Bind-mount your local folder so edits appear live in /usr/src/app
+      - .:/usr/src/app
+      # Keep node_modules inside the container (so the bind-mount doesn't overwrite it)
+      - /usr/src/app/node_modules
+    environment:
+      # Force Chokidar to use polling (helpful on Windows → Linux mounts)
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
+    command: npm run dev

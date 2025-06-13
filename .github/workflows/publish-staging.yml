@@ -3,14 +3,13 @@ name: Build & Push Staging Image
 
 # 1) Only run when a PR into staging is merged
 on:
-  pull_request:
-    types: [closed]
-    branches: [staging]
+  push:
+    branches:
+      - staging
+  workflow_dispatch:
 
 jobs:
   publish-staging:
-    # 2) Guard so it only fires on an actual merge
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
 
     # 3) Configure environment vars for reuse

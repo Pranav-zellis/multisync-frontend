@@ -17,3 +17,5 @@ For hotfixes or bespoke client changes that require quick deployment, the develo
 You must ensure to keep the development branch up-to-date with the staging branch when you merge a hotfix/feature branch to staging via:
 1. Cherry pick the commit from staging to development branch (recommended - gives granular control of commits being added to development with clean history)
 2. Back-merge to development branch.
+
+test - gh actions ecr image push

@@ -1,0 +1,66 @@
+# .github/workflows/publish-staging.yml
+name: Build & Push Staging Image
+
+# 1) Only run when a PR into staging is merged
+on:
+  pull_request:
+    types: [closed]
+    branches: [staging]
+
+jobs:
+  publish-staging:
+    # 2) Guard so it only fires on an actual merge
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    # 3) Configure environment vars for reuse
+    env:
+      AWS_REGION:    ${{ secrets.AWS_REGION }}
+      AWS_ACCOUNT:   ${{ secrets.AWS_ACCOUNT_ID }}
+      ECR_REGISTRY:  ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
+      IMAGE_NAME:    multisync-frontend   # change to multisync-backend in the backend repo
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      # 4) Grab the merged staging commit, full history
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # 5) Assume the IAM role via OIDC (no long-lived keys!)
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region:    ${{ env.AWS_REGION }}
+
+      # 6) Log in to Amazon ECR
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      # 7) Build the multi-stage, production-style image
+      - name: Build staging image
+        run: |
+          GIT_SHA=${GITHUB_SHA::7}
+          IMAGE=${ECR_REGISTRY}/${IMAGE_NAME}
+          docker build \
+            --file Dockerfile.staging \
+            --tag ${IMAGE}:staging \
+            --tag ${IMAGE}:staging-${GIT_SHA} \
+            .
+
+      # 8) Push the unique SHA tag first (immutable)
+      - name: Push SHA-tagged image
+        run: |
+          IMAGE=${ECR_REGISTRY}/${IMAGE_NAME}
+          docker push ${IMAGE}:staging-${GITHUB_SHA::7}
+
+      # 9) Then update the floating “staging” tag
+      - name: Push floating “staging” tag
+        run: |
+          IMAGE=${ECR_REGISTRY}/${IMAGE_NAME}
+          docker push ${IMAGE}:staging

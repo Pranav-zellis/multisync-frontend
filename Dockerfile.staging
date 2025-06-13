@@ -1,0 +1,33 @@
+# ————————————————————————
+# 1) Build stage: compile & bundle Next.js
+FROM node:18-alpine AS builder
+WORKDIR /usr/src/app
+
+# Copy only package manifests first for Docker cache
+COPY package*.json ./
+RUN npm ci
+
+# Copy source & build
+COPY . .
+RUN npm run build
+
+# ————————————————————————
+# 2) Runtime stage: slim serving image
+FROM node:18-alpine AS runtime
+WORKDIR /usr/src/app
+
+# Install only production deps
+COPY package*.json ./
+RUN npm ci --production
+
+# Copy build output
+COPY --from=builder /usr/src/app/.next ./.next
+COPY --from=builder /usr/src/app/public ./public
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+
+# Expose the port Next.js will listen on
+EXPOSE 3000
+
+# Use production mode
+ENV NODE_ENV=production
+CMD ["npm", "run", "start"]   # runs `next start`

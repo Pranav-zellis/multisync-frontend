@@ -57,9 +57,3 @@ jobs:
         run: |
           IMAGE=${ECR_REGISTRY}/${IMAGE_NAME}
           docker push ${IMAGE}:staging-${GITHUB_SHA::7}
-
-      # 9) Then update the floating “staging” tag
-      - name: Push floating “staging” tag
-        run: |
-          IMAGE=${ECR_REGISTRY}/${IMAGE_NAME}
-          docker push ${IMAGE}:staging

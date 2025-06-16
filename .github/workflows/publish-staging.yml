@@ -61,5 +61,5 @@ jobs:
       # 9) Then update the floating “staging” tag
       - name: Push floating “staging” tag
         run: |
-          IMAGE=${ECR_REGISTRY}/${IMAGE_NAME}More actions
+          IMAGE=${ECR_REGISTRY}/${IMAGE_NAME}
           docker push ${IMAGE}:staging

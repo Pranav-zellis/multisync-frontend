@@ -17,7 +17,7 @@ jobs:
       AWS_REGION:    ${{ secrets.AWS_REGION }}
       AWS_ACCOUNT:   ${{ secrets.AWS_ACCOUNT_ID }}
       ECR_REGISTRY:  ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
-      IMAGE_NAME:    multisync-frontend   # change to multisync-backend in the backend repo
+      IMAGE_NAME:    multisync-frontend
 
     permissions:
       contents: read
@@ -30,7 +30,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      # 5) Assume the IAM role via OIDC (no long-lived keys!)
+      # 5) Assume the IAM role via OIDC
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -53,7 +53,7 @@ jobs:
             --tag ${IMAGE}:staging-${GIT_SHA} \
             .
 
-      # 8) Push the unique SHA tag first (immutable)
+      # 8) Push the unique git-SHA tag first
       - name: Push SHA-tagged image
         run: |
           IMAGE=${ECR_REGISTRY}/${IMAGE_NAME}

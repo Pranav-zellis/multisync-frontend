@@ -48,6 +48,7 @@ jobs:
           IMAGE=${ECR_REGISTRY}/${IMAGE_NAME}
           docker build \
             --file Dockerfile.staging \
+            --build-arg NEXT_PUBLIC_API_URL=http://backend:3000 \
             --tag ${IMAGE}:staging \
             --tag ${IMAGE}:staging-${GIT_SHA} \
             .

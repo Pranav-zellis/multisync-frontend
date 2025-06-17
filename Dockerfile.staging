@@ -16,6 +16,11 @@ RUN npm run build
 FROM node:18-alpine AS runtime
 WORKDIR /usr/src/app
 
+# 0) Accept the API URL at build time
+ARG NEXT_PUBLIC_API_URL
+# 1) Export it so Next.js sees it during build
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
 # Install only production deps
 COPY package*.json ./
 RUN npm ci --production

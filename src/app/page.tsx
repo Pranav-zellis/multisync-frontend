@@ -4,13 +4,21 @@ import Image from "next/image";
 import { useEffect, useState } from 'react';
 
 export default function Home() {
-  const [msg, setMsg] = useState('...');
+  const [apiStatus, setApiStatus] = useState('...');
+  const [dbStatus, setDbStatus]   = useState('...');
+
   useEffect(() => {
     console.log('🏃 calling /health…');
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/health`)
-      .then((r) => r.json())
-      .then((j) => setMsg(j.status))
-      .catch(() => setMsg('❌ no connection'));
+      .then(res => res.json())
+      .then(({ status, db }) => {
+        setApiStatus(status);
+        setDbStatus(db);
+      })
+      .catch(() => {
+        setApiStatus('❌ no connection');
+        setDbStatus('❌ no connection');
+      });
   }, []);
 
   return (
@@ -25,19 +33,13 @@ export default function Home() {
           priority
         />
         <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
+          <li>
+            API says: <strong>{apiStatus}</strong>
           </li>
           <li>
-            Backend says: {msg}
+            DB says: <strong>{dbStatus}</strong>
           </li>
+          
         </ol>
 
         <div className="flex gap-4 items-center flex-col sm:flex-row">

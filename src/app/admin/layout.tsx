@@ -25,14 +25,13 @@ import {
 } from "@mui/material";
 import { useRouter, usePathname } from "next/navigation";
 import Cookies from "js-cookie";
-import { useTheme } from "@mui/material/styles";
 
 const drawerWidthExpanded = 240;
 const drawerWidthCollapsed = 72;
 
 const navItems = [
   { label: "Dashboard", href: "/admin/dashboard", icon: "dashboard" },
-  { label: "Users", href: "/admin/users", icon: "people" },
+  { label: "Tenants", href: "/admin/Tenant", icon: "deployed_code_account" },
   { label: "Settings", href: "/admin/settings", icon: "settings" },
 ];
 
@@ -42,7 +41,7 @@ type User = {
   id?: string;
 };
 
-export default function DashboardLayout({
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -56,7 +55,7 @@ export default function DashboardLayout({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
+  const [loading, setLoading] = useState(true); // loading state
   const isMenuOpen = Boolean(anchorEl);
 
   const theme = useMemo(
@@ -77,17 +76,25 @@ export default function DashboardLayout({
   );
 
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
   useEffect(() => {
     const token = Cookies.get("id_token_admin");
-    if (!token) return router.push("/admin/login");
+    if (!token) {
+      router.push("/admin/login");
+      return;
+    }
 
     fetch("http://localhost:4000/admin/me", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!data) return router.push("/admin/login");
-        setUser(data);
+        if (!data) {
+          router.push("/admin/login");
+        } else {
+          setUser(data);
+        }
       })
-      .catch(() => router.push("/admin/login"));
+      .catch(() => router.push("/admin/login"))
+      .finally(() => setLoading(false)); // Stop loading regardless of success or failure
   }, [router]);
 
   if (pathname.startsWith("/admin/login")) return <>{children}</>;
@@ -147,7 +154,10 @@ export default function DashboardLayout({
                     color: selected ? "primary.main" : "text.secondary",
                   }}
                 >
-                  <span className="material-icons" style={{ color: "inherit" }}>
+                  <span
+                    className="material-symbols-outlined"
+                    style={{ color: "inherit" }}
+                  >
                     {icon}
                   </span>
                 </ListItemIcon>
@@ -161,160 +171,175 @@ export default function DashboardLayout({
   );
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Box sx={{ display: "flex" }}>
-        {/* AppBar */}
-        <AppBar
-          position="fixed"
-          color="primary"
-          sx={{
-            zIndex: (theme) => theme.zIndex.drawer + 1,
-            backgroundColor: (theme) => theme.palette.primary.header,
-            transition: theme.transitions.create(["width", "margin"], {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.leavingScreen,
-            }),
-          }}
-        >
-          <Toolbar>
-            <IconButton
-              color="inherit"
-              edge="start"
-              onClick={() => setMobileOpen(!mobileOpen)}
-              sx={{ mr: 2, display: { md: "none" } }}
-            >
-              <span className="material-icons">menu</span>
-            </IconButton>
-            <Typography variant="h6" sx={{ flexGrow: 1 }}>
-              <img
-                src={
-                  darkMode ? "/images/logo-light.png" : "/images/logo-light.png"
-                }
-                alt="Logo"
-                style={{
-                  width: 120,
-                  height: 40,
-                  objectFit: "contain",
-                }}
-              />
-            </Typography>
-            <Tooltip title={darkMode ? "Light mode" : "Dark mode"}>
-              <IconButton
-                onClick={() => setDarkMode(!darkMode)}
-                color="inherit"
-              >
-                <span className="material-icons">
-                  {darkMode ? "light_mode" : "dark_mode"}
-                </span>
-              </IconButton>
-            </Tooltip>
-            <IconButton
-              edge="end"
-              onClick={(e) => setAnchorEl(e.currentTarget)}
-              color="inherit"
-            >
-              {user?.username ? (
-                <Avatar>{user.username.charAt(0).toUpperCase()}</Avatar>
-              ) : (
-                <span className="material-icons">account_circle</span>
-              )}
-            </IconButton>
-          </Toolbar>
-        </AppBar>
+    <>
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-white z-[13000] flex items-center justify-center">
+          <div
+            className="w-16 h-16 rounded-full border-t-4 border-black border-solid border-r-4 border-r-transparent animate-spin"
+            role="status"
+            aria-label="Loading"
+          />
+        </div>
+      )}
 
-        {/* Permanent Drawer (Desktop) */}
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: "none", md: "block" },
-            "& .MuiDrawer-paper": {
-              width: hovered ? drawerWidthExpanded : drawerWidthCollapsed,
-              transition: "width 0.2s, box-shadow 0.2s, transform 0.2s",
-              boxSizing: "border-box",
-              overflowX: "hidden",
-              boxShadow: "0 8px 20px rgba(0,0,0,0.12)",
-              ...(hovered && {
-                boxShadow: "0 12px 40px rgba(0,0,0,0.24)",
-                transform: "translateZ(10px) translateY(-4px)",
-              }),
-            },
-          }}
-          open
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
-        >
-          {drawer}
-        </Drawer>
-
-        {/* Temporary Drawer (Mobile) */}
-
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-          ModalProps={{ keepMounted: true }}
-          sx={{
-            display: { xs: "block", md: "none" },
-            "& .MuiDrawer-paper": {
-              width: drawerWidthExpanded, // always full width on mobile
-              boxSizing: "border-box",
-              overflowX: "hidden",
-            },
-          }}
-        >
-          {drawer}
-        </Drawer>
-
-        {/* Main Content */}
-        <Box
-          component="main"
-          sx={{
-            flexGrow: 1,
-            p: 3,
-            mt: "64px",
-            ml: {
-              md: `${hovered ? drawerWidthExpanded : drawerWidthCollapsed}px`,
-            },
-            width: {
-              md: `calc(100% - ${
-                hovered ? drawerWidthExpanded : drawerWidthCollapsed
-              }px)`,
-            },
-            transition: (theme) =>
-              theme.transitions.create(["margin", "width"], {
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Box sx={{ display: "flex" }}>
+          {/* AppBar */}
+          <AppBar
+            position="fixed"
+            color="primary"
+            sx={{
+              zIndex: (theme) => theme.zIndex.drawer + 1,
+              backgroundColor: (theme) => theme.palette.primary.header,
+              transition: theme.transitions.create(["width", "margin"], {
                 easing: theme.transitions.easing.sharp,
                 duration: theme.transitions.duration.leavingScreen,
               }),
-          }}
-        >
-          {children}
-        </Box>
-
-        {/* Avatar Menu */}
-        <Menu
-          anchorEl={anchorEl}
-          open={isMenuOpen}
-          onClose={() => setAnchorEl(null)}
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-          transformOrigin={{ vertical: "top", horizontal: "right" }}
-        >
-          <MenuItem onClick={() => setAnchorEl(null)}>Profile</MenuItem>
-          <MenuItem
-            onClick={() => {
-              fetch("http://localhost:4000/admin/logout", {
-                method: "GET",
-                credentials: "include",
-              }).then((res) => {
-                if (res.ok) router.push("/admin/login");
-              });
-              setAnchorEl(null);
             }}
           >
-            Logout
-          </MenuItem>
-        </Menu>
-      </Box>
-    </ThemeProvider>
+            <Toolbar>
+              <IconButton
+                color="inherit"
+                edge="start"
+                onClick={() => setMobileOpen(!mobileOpen)}
+                sx={{ mr: 2, display: { md: "none" } }}
+              >
+                <span className="material-symbols-outlined">menu</span>
+              </IconButton>
+              <Typography variant="h6" sx={{ flexGrow: 1 }}>
+                <img
+                  src={
+                    darkMode
+                      ? "/images/logo-light.png"
+                      : "/images/logo-light.png"
+                  }
+                  alt="Logo"
+                  style={{
+                    width: 150,
+                    height: 60,
+                    objectFit: "contain",
+                  }}
+                />
+              </Typography>
+              <Tooltip title={darkMode ? "Light mode" : "Dark mode"}>
+                <IconButton
+                  onClick={() => setDarkMode(!darkMode)}
+                  color="inherit"
+                >
+                  <span className="material-symbols-outlined">
+                    {darkMode ? "light_mode" : "dark_mode"}
+                  </span>
+                </IconButton>
+              </Tooltip>
+              <IconButton
+                edge="end"
+                onClick={(e) => setAnchorEl(e.currentTarget)}
+                color="inherit"
+              >
+                {user?.username ? (
+                  <Avatar>{user.username.charAt(0).toUpperCase()}</Avatar>
+                ) : (
+                  <span className="material-symbols-outlined">
+                    account_circle
+                  </span>
+                )}
+              </IconButton>
+            </Toolbar>
+          </AppBar>
+
+          {/* Permanent Drawer (Desktop) */}
+          <Drawer
+            variant="permanent"
+            sx={{
+              display: { xs: "none", md: "block" },
+              "& .MuiDrawer-paper": {
+                width: hovered ? drawerWidthExpanded : drawerWidthCollapsed,
+                transition: "width 0.2s, box-shadow 0.2s, transform 0.2s",
+                boxSizing: "border-box",
+                overflowX: "hidden",
+                boxShadow: "0 8px 20px rgba(0,0,0,0.12)",
+                ...(hovered && {
+                  boxShadow: "0 12px 40px rgba(0,0,0,0.24)",
+                  transform: "translateZ(10px) translateY(-4px)",
+                }),
+              },
+            }}
+            open
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+          >
+            {drawer}
+          </Drawer>
+
+          {/* Temporary Drawer (Mobile) */}
+          <Drawer
+            variant="temporary"
+            open={mobileOpen}
+            onClose={() => setMobileOpen(false)}
+            ModalProps={{ keepMounted: true }}
+            sx={{
+              display: { xs: "block", md: "none" },
+              "& .MuiDrawer-paper": {
+                width: drawerWidthExpanded,
+                boxSizing: "border-box",
+                overflowX: "hidden",
+              },
+            }}
+          >
+            {drawer}
+          </Drawer>
+
+          {/* Main Content */}
+          <Box
+            component="main"
+            sx={{
+              flexGrow: 1,
+              mt: "64px",
+              ml: {
+                md: `${hovered ? drawerWidthExpanded : drawerWidthCollapsed}px`,
+              },
+              width: {
+                md: `calc(100% - ${
+                  hovered ? drawerWidthExpanded : drawerWidthCollapsed
+                }px)`,
+              },
+              transition: (theme) =>
+                theme.transitions.create(["margin", "width"], {
+                  easing: theme.transitions.easing.sharp,
+                  duration: theme.transitions.duration.leavingScreen,
+                }),
+            }}
+          >
+            {children}
+          </Box>
+
+          {/* Avatar Menu */}
+          <Menu
+            anchorEl={anchorEl}
+            open={isMenuOpen}
+            onClose={() => setAnchorEl(null)}
+            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+            transformOrigin={{ vertical: "top", horizontal: "right" }}
+          >
+            <MenuItem onClick={() => setAnchorEl(null)}>Profile</MenuItem>
+            <MenuItem
+              onClick={() => {
+                fetch("http://localhost:4000/admin/logout", {
+                  method: "GET",
+                  credentials: "include",
+                }).then((res) => {
+                  if (res.ok) router.push("/admin/login");
+                });
+                setAnchorEl(null);
+              }}
+            >
+              Logout
+            </MenuItem>
+          </Menu>
+        </Box>
+      </ThemeProvider>
+    </>
   );
 }

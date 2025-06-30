@@ -8,11 +8,11 @@ export default function NotFound() {
     <Box
       sx={{
         height: "100vh",
+        textAlign: "center",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        textAlign: "center",
         px: 2,
       }}
     >
@@ -25,7 +25,13 @@ export default function NotFound() {
       <Typography variant="body1" mb={3}>
         Sorry, the page you are looking for does not exist.
       </Typography>
-      <Button component={Link} href="/" variant="contained" color="primary">
+      <Button
+        variant="contained"
+        color="primary"
+        component={Link}
+        href="/"
+        sx={{ mt: 2 }}
+      >
         Go to Home
       </Button>
     </Box>

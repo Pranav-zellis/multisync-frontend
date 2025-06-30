@@ -1,7 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation"; // Next.js 13+ App Router redirect hook
+import { useRouter } from "next/navigation";
+import {
+  Container,
+  Card,
+  CardContent,
+  Typography,
+  Divider,
+  Button,
+  CircularProgress,
+  Box,
+} from "@mui/material";
 
 type User = {
   email?: string;
@@ -16,7 +26,6 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  // Fetch current user on mount
   useEffect(() => {
     fetch("http://localhost:4000/admin/me", {
       credentials: "include",
@@ -32,7 +41,6 @@ export default function Home() {
       });
   }, []);
 
-  // Redirect to login page if not logged in
   useEffect(() => {
     if (!loading && !user) {
       router.push("/admin");
@@ -47,7 +55,7 @@ export default function Home() {
       .then((res) => {
         if (res.ok) {
           setUser(null);
-          router.push("/api/admin/login"); // redirect after logout
+          router.push("/api/admin/login");
         } else {
           alert("Logout failed");
         }
@@ -56,38 +64,38 @@ export default function Home() {
   };
 
   return (
-    <main style={{ padding: 20, position: "relative" }}>
-      <h1>Welcome to the App</h1>
+    <Container maxWidth="sm" sx={{ mt: 8 }}>
 
-      {user && (
-        <>
-          <p>
-            <strong>Id:</strong> {user.id}
-          </p>
-          <p>
-            <strong>Username:</strong> {user.username}
-          </p>
-          <p>
-            <strong>Email:</strong> {user.email}
-          </p>
-          <p>
-            <strong>User Pool ID:</strong> {user.userPoolId}
-          </p>
-          <button
-            onClick={handleLogout}
-            style={{
-              cursor: "pointer",
-              color: "blue",
-              textDecoration: "underline",
-              background: "none",
-              border: "none",
-              padding: 0,
-            }}
-          >
-            Logout
-          </button>
-        </>
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 6 }}>
+          <CircularProgress />
+        </Box>
+      ) : user ? (
+        <Card elevation={3}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              User Details
+            </Typography>
+            <Divider sx={{ mb: 2 }} />
+            <Typography variant="body1">
+              <strong>ID:</strong> {user.id}
+            </Typography>
+            <Typography variant="body1">
+              <strong>Username:</strong> {user.username}
+            </Typography>
+            <Typography variant="body1">
+              <strong>Email:</strong> {user.email}
+            </Typography>
+            <Typography variant="body1" gutterBottom>
+              <strong>User Pool ID:</strong> {user.userPoolId}
+            </Typography>
+          </CardContent>
+        </Card>
+      ) : (
+        <Typography color="error" align="center">
+          User not found or not logged in.
+        </Typography>
       )}
-    </main>
+    </Container>
   );
 }

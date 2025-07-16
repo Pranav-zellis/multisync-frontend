@@ -70,32 +70,35 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (authLoading) return;
 
-    if (!user) {
-      if (pathname !== "/") {
+    // if (!user) {
+    //   if (pathname !== "/") {
+    //     showLoader();
+    //     router.replace("/");
+    //   }
+    //   return;
+    // }
+
+    if (user) {
+
+      const groups = user.groups || [];
+      const tenant = Cookies.get("tenant");
+
+      if (
+        !isAdminRoute &&
+        (groups.includes("*") || (groups.length > 1 && !tenant)) &&
+        pathname !== "/tenants"
+      ) {
         showLoader();
-        router.replace("/");
+        router.replace("/tenants");
+        return;
       }
-      return;
     }
 
-    const groups = user.groups || [];
-    const tenant = Cookies.get("tenant");
-
-    if (
-      !isAdminRoute &&
-      (groups.includes("*") || (groups.length > 1 && !tenant)) &&
-      pathname !== "/tenants"
-    ) {
-      showLoader();
-      router.replace("/tenants");
-      return;
-    }
-
-    if (pathname === "/") {
-      showLoader();
-      router.replace("/dashboard");
-      return;
-    }
+    // if (pathname === "/") {
+    //   showLoader();
+    //   router.replace("/dashboard");
+    //   return;
+    // }
 
     if (isAdminRoute && !isAdmin) {
       showLoader();

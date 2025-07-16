@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Box, Typography, Button } from "@mui/material";
 
-export default function NotFound() {
+export default function AdminNotFound() {
   return (
     <Box
       sx={{
@@ -16,23 +16,20 @@ export default function NotFound() {
         px: 2,
       }}
     >
-      <Typography variant="h1" fontWeight="bold" gutterBottom>
-        404
-      </Typography>
-      <Typography variant="h5" gutterBottom>
-        Page Not Found
+      <Typography variant="h3" fontWeight="bold" gutterBottom>
+        404 - Admin Page Not Found
       </Typography>
       <Typography variant="body1" mb={3}>
-        Sorry, the page you are looking for does not exist.
+        The admin page you are looking for does not exist.
       </Typography>
       <Button
         variant="contained"
         color="primary"
         component={Link}
-        href="/"
+        href="/super_admin_portal/dashboard"
         sx={{ mt: 2 }}
       >
-        Go to Home
+        Go to Admin Dashboard
       </Button>
     </Box>
   );

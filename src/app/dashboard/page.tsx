@@ -1,24 +1,37 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
+import Cookies from "js-cookie";
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  CircularProgress,
+  Typography,
+} from "@mui/material";
 
 type User = {
   email?: string;
   sub?: string;
   username?: string;
   userPoolId?: string;
+  customAttributes?: {
+    email?: string;
+  };
 };
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [tenant, setTenant] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('http://localhost:4000/auth/me', {
-      credentials: 'include',
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`, {
+      credentials: "include",
     })
-      .then(res => (res.ok ? res.json() : null))
-      .then(userData => {
+      .then((res) => (res.ok ? res.json() : null))
+      .then((userData) => {
         setUser(userData);
         setLoading(false);
       })
@@ -26,32 +39,70 @@ export default function Home() {
         setUser(null);
         setLoading(false);
       });
+
+    const tenantCookie = Cookies.get("tenant");
+    if (tenantCookie) {
+      setTenant(tenantCookie);
+    }
   }, []);
 
   return (
-    <main style={{ padding: 20, position: 'relative' }}>
-      <h1>Welcome to the App</h1>
+    <Box
+      sx={{
+        p: 4,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {loading ? (
+        <CircularProgress size={60} />
+      ) : (
+        <Card sx={{ maxWidth: 500, width: "100%", p: 3, bgcolor: "#f5f5f5" }}>
+          <CardContent>
+            <Typography variant="h5" gutterBottom>
+              Welcome to the App
+            </Typography>
 
-      {loading && (
-        <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-50">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-black border-solid"></div>
-        </div>
-      )}
+            {user ? (
+              <>
+                <Typography variant="subtitle1">
+                  <strong>Username:</strong> {user.username}
+                </Typography>
+                <Typography variant="subtitle1">
+                  <strong>Email:</strong> {user.customAttributes?.email}
+                </Typography>
+                <Typography variant="subtitle1">
+                  <strong>User Pool ID:</strong> {user.userPoolId}
+                </Typography>
+                <Typography variant="subtitle1">
+                  <strong>Tenant:</strong> {tenant ?? "Not selected"}
+                </Typography>
 
-      {!loading && (
-        <>
-          {user ? (
-            <>
-              <p><strong>Username:</strong> {user.username}</p>
-              <p><strong>Email:</strong> {user.email}</p>
-              <p><strong>User Pool ID:</strong> {user.userPoolId}</p>
-              <a href="/api/auth/logout">Logout</a>
-            </>
-          ) : (
-            <a href="/api/auth/login">Login</a>
-          )}
-        </>
+                <Box mt={3}>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    href={`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/logout`}
+                  >
+                    Logout
+                  </Button>
+                </Box>
+              </>
+            ) : (
+              <Box mt={2}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  href="/api/auth/login"
+                >
+                  Login
+                </Button>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
       )}
-    </main>
+    </Box>
   );
 }

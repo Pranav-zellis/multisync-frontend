@@ -21,7 +21,7 @@ export default function LoginForm() {
     setLoading(true);
 
     setTimeout(() => {
-      window.location.href = "http://localhost:4000/auth/login";
+      window.location.href = process.env.NEXT_PUBLIC_API_BASE_URL+"/auth/login";
     }, 1000); // 1 second delay before redirect
   };
 
@@ -60,7 +60,7 @@ export default function LoginForm() {
           >
             <Box sx={{ mb: 2 }}>
               <Image
-                src="/images/logo-dark-new.png"
+                src="/images/ZELLIS_Multisync_dark.svg"
                 alt="Company Logo"
                 width={170}
                 height={170}

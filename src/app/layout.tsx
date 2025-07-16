@@ -1,35 +1,20 @@
-import type { Metadata } from "next";
+// app/layout.tsx (server layout)
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import ClientLayout from "./ClientLayout";
 
-import MUIProvider from "@/components/MUIProvider"; // <-- import here
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
+const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
+export const metadata = {
   title: "Multisync",
-  description: "",
-  icons: {
-    icon: [
-      { url: "/images/logo-light_hide.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon.ico" } // fallback favicon
-    ]
-  }
+  description: "Admin Panel",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
@@ -46,10 +31,8 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <MUIProvider>{children}</MUIProvider>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <ClientLayout>{children}</ClientLayout>
       </body>
     </html>
   );

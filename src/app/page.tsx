@@ -1,49 +1,40 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/auth-context';
+import { useGlobalLoader } from '@/context/loader-context'; // ✅ Global loader
 import LoginForm from '@/components/LoginForm';
-
-type User = {
-  email?: string;
-  username?: string;
-  userPoolId?: string;
-};
+import Cookies from 'js-cookie';
 
 export default function Home() {
-  const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
+  const { user, loading } = useAuth();
+  const { showLoader, hideLoader } = useGlobalLoader();
 
   useEffect(() => {
-    fetch('http://localhost:4000/auth/me', { credentials: 'include' })
-      .then(res => (res.ok ? res.json() : null))
-      .then(userData => {
-        setUser(userData);
-        setLoading(false);
+    if (loading) {
+      showLoader();
+      return;
+    }
 
-        if (userData) {
-          router.push('/dashboard');
-        }
-      })
-      .catch(() => {
-        setUser(null);
-        setLoading(false);
-      });
-  }, [router]);
+    if (user) {
+      showLoader();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-black border-solid"></div>
-      </div>
-    );
-  }
+      const tenant = Cookies.get('tenant');
+      if (tenant) {
+        router.replace('/dashboard');
+      } else {
+        router.replace('/tenants');
+      }
 
-  // If not logged in, show login form
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <LoginForm />
-    </div>
-  );
+      return;
+    }
+
+    hideLoader();
+  }, [user, loading]);
+
+  if (loading || user) return null;
+
+  return <LoginForm />;
 }

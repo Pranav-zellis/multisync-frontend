@@ -58,18 +58,15 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     typography: { fontFamily: "Roboto, Helvetica, Arial, sans-serif" },
   });
 
-  // Show loader initially when auth is loading
-  useEffect(() => {
-    if (authLoading) {
-      showLoader();
-      setContentReady(false);
-    }
-  }, [authLoading]);
-
-  // Redirect logic & loader control
   useEffect(() => {
     if (authLoading) return;
 
+    const groups = user?.groups || [];
+    const hasMultipleGroups = groups.length > 1;
+    const hasWildcardGroup = groups.includes("*");
+    const tenant = Cookies.get("tenant");
+
+    // // Condition 1: If not logged in, redirect to "/"
     // if (!user) {
     //   if (pathname !== "/") {
     //     showLoader();
@@ -78,39 +75,29 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     //   return;
     // }
 
-    if (user) {
-
-      const groups = user.groups || [];
-      const tenant = Cookies.get("tenant");
-
-      if (
-        !isAdminRoute &&
-        (groups.includes("*") || (groups.length > 1 && !tenant)) &&
-        pathname !== "/tenants"
-      ) {
-        showLoader();
-        router.replace("/tenants");
-        return;
-      }
-    }
-
-    // if (pathname === "/") {
-    //   showLoader();
-    //   router.replace("/dashboard");
+    // Condition 2: Multiple groups or "*" group, no tenant selected
+    // if ((hasMultipleGroups || hasWildcardGroup) && !tenant) {
+    //   if (pathname !== "/tenants") {
+    //     showLoader();
+    //     router.replace("/tenants");
+    //   }
     //   return;
     // }
 
-    if (isAdminRoute && !isAdmin) {
+    // Condition 3: Only one group (not "*"), go to "/dashboard"
+    const onlyOneGroup = groups.length === 1 && groups[0] !== "*";
+    if (onlyOneGroup && pathname !== "/dashboard") {
       showLoader();
+      router.replace("/dashboard");
       return;
     }
 
-    // When everything looks good, show sidebar, wait a bit, then hide loader & show content
+    // If everything is valid, show loader then content
     showLoader();
     const timer = setTimeout(() => {
       hideLoader();
       setContentReady(true);
-    }, 500); // wait for half a second (adjust as needed)
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [authLoading, pathname, user]);

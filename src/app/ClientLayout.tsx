@@ -5,15 +5,19 @@ import { AuthProvider } from "@/context/auth-context";
 import Shell from "@/components/Shell";
 import GlobalLoader from "@/components/GlobalLoader";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
+
+  const [queryClient] = useState(() => new QueryClient());
   return (
     <LoaderProvider>
       <GlobalLoader />
       <RouteChangeHandler />
       <AuthProvider>
-        <Shell>{children}</Shell>
+        <Shell><QueryClientProvider client={queryClient}>{children}</QueryClientProvider></Shell>
       </AuthProvider>
     </LoaderProvider>
   );

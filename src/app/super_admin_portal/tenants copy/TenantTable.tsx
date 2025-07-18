@@ -4,6 +4,8 @@ import {
   DataGrid,
   GridPaginationModel,
   GridActionsCellItem,
+  GridCellEditStopReasons,
+  GridCellModesModel,
 } from "@mui/x-data-grid";
 import {
   Box,
@@ -14,24 +16,24 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Snackbar,
   FormControlLabel,
   Checkbox,
-  Alert,
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useGlobalLoader } from "@/context/loader-context";
+import GlobalSnackbar from "@/components/GlobalSnackbar";
 
 interface Tenant {
   tenant_name: string;
   tenant_status: string;
-  schema: string; // primary key
+  schema: string;
 }
 
 export default function TenantGridTable() {
   const { showLoader, hideLoader } = useGlobalLoader();
 
   const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [cellModesModel, setCellModesModel] = useState<GridCellModesModel>({});
   const [search, setSearch] = useState("");
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
@@ -61,7 +63,6 @@ export default function TenantGridTable() {
 
   const fetchTenants = async () => {
     setGridLoading(true);
-
     try {
       const query = `
         query GetTenants($skip: Int, $take: Int, $search: String) {
@@ -70,6 +71,8 @@ export default function TenantGridTable() {
               tenant_name
               tenant_status
               schema
+              created_at
+              last_modified
             }
             totalCount
           }
@@ -89,7 +92,6 @@ export default function TenantGridTable() {
       });
 
       const data = await res.json();
-
       setTenants(data.data?.tenants.tenants || []);
       setTotalCount(data.data?.tenants.totalCount || 0);
     } catch (error) {
@@ -157,7 +159,35 @@ export default function TenantGridTable() {
     return json.data.createTenant;
   };
 
-  // You can add updateTenantMutation & handleUpdate if needed (not included here)
+  const updateTenantMutation = async (input: {
+    schema: string;
+    tenant_name: string;
+    tenant_status: "active" | "inactive";
+  }) => {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        query: `
+          mutation UpdateTenant($input: UpdateTenantInput!) {
+            updateTenant(updateTenantInput: $input) {
+              schema
+              tenant_name
+              tenant_status
+            }
+          }
+        `,
+        variables: { input },
+      }),
+    });
+
+    const json = await res.json();
+    if (!res.ok || json.errors) {
+      throw new Error(json.errors?.[0]?.message || "Failed to update tenant");
+    }
+    return json.data.updateTenant;
+  };
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
@@ -166,29 +196,41 @@ export default function TenantGridTable() {
     const status = statusActive ? "active" : "inactive";
 
     try {
-      await createTenantMutation({
-        tenant_name: tenantName,
-        tenant_status: status,
-      });
-
-      setSnackbar({
-        open: true,
-        message: "Tenant created successfully",
-        severity: "success",
-      });
+      if (isEditing && editingSchema) {
+        await updateTenantMutation({
+          schema: editingSchema,
+          tenant_name: tenantName,
+          tenant_status: status,
+        });
+        setSnackbar({
+          open: true,
+          message: "Tenant updated successfully",
+          severity: "success",
+        });
+      } else {
+        await createTenantMutation({
+          tenant_name: tenantName,
+          tenant_status: status,
+        });
+        setSnackbar({
+          open: true,
+          message: "Tenant created successfully",
+          severity: "success",
+        });
+      }
 
       fetchTenants();
       setDialogOpen(false);
       resetForm();
     } catch (err: any) {
-      console.error("Error creating tenant:", err);
+      console.error("Error saving tenant:", err);
       setErrors((prev) => ({
         ...prev,
-        tenantName: err.message || "Failed to create tenant",
+        tenantName: err.message || "Operation failed",
       }));
       setSnackbar({
         open: true,
-        message: err.message || "Failed to create tenant",
+        message: err.message || "Operation failed",
         severity: "error",
       });
     } finally {
@@ -219,21 +261,12 @@ export default function TenantGridTable() {
 
   return (
     <Box>
-      {/* Snackbar */}
-      <Snackbar
+      <GlobalSnackbar
         open={snackbar.open}
-        autoHideDuration={3000}
+        message={snackbar.message}
+        severity={snackbar.severity}
         onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert
-          onClose={handleSnackbarClose}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      />
 
       {/* Header */}
       <Box mb={2} display="flex" flexDirection="column" gap={1}>
@@ -278,8 +311,17 @@ export default function TenantGridTable() {
             rows={tenants}
             columns={[
               { field: "tenant_name", headerName: "Tenant Name", flex: 1 },
-              { field: "tenant_status", headerName: "Status", flex: 1 },
+              {
+                field: "tenant_status",
+                headerName: "Status",
+                flex: 1,
+                editable: true,
+                type: "singleSelect",
+                valueOptions: ["active", "inactive"],
+              },
               { field: "schema", headerName: "Schema", flex: 1 },
+              { field: "created_at", headerName: "Created at", flex: 1 },
+              { field: "last_modified", headerName: "Last Modified", flex: 1 },
               {
                 field: "actions",
                 headerName: "Actions",
@@ -302,6 +344,45 @@ export default function TenantGridTable() {
             autoHeight
             disableRowSelectionOnClick
             getRowId={(row) => row.schema}
+            cellModesModel={cellModesModel}
+            onCellModesModelChange={(newModel) => setCellModesModel(newModel)}
+            onCellEditStop={(params, event) => {
+              if (params.reason === GridCellEditStopReasons.cellFocusOut) {
+                setCellModesModel((prev) => ({
+                  ...prev,
+                  [params.id]: {
+                    ...prev[params.id],
+                    [params.field]: { mode: "view" },
+                  },
+                }));
+              }
+            }}
+            processRowUpdate={async (updatedRow) => {
+              try {
+                const updated = await updateTenantMutation({
+                  schema: updatedRow.schema,
+                  tenant_name: updatedRow.tenant_name,
+                  tenant_status: updatedRow.tenant_status,
+                });
+                setSnackbar({
+                  open: true,
+                  message: "Tenant updated successfully",
+                  severity: "success",
+                });
+                return updated;
+              } catch (error: any) {
+                console.error("Update error:", error);
+                setSnackbar({
+                  open: true,
+                  message: error.message || "Failed to update tenant",
+                  severity: "error",
+                });
+                throw error;
+              }
+            }}
+
+
+            experimentalFeatures={{ newEditingApi: true }}
             sx={{
               bgcolor: "#fff",
               borderRadius: 2,
@@ -323,6 +404,7 @@ export default function TenantGridTable() {
               },
             }}
           />
+
         </Box>
       </Box>
 

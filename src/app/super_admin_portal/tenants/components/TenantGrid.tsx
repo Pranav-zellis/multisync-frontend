@@ -5,7 +5,7 @@ import {
   DataGrid,
   GridPaginationModel,
   GridCellModesModel,
-  GridToolbar,
+  GridActionsCellItem
 } from "@mui/x-data-grid";
 import { Box } from "@mui/material";
 import TenantToolbar from "./TenantToolbar";
@@ -34,8 +34,10 @@ export default function TenantGrid() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingSchema, setEditingSchema] = useState<string | null>(null);
 
+  // Tenant name and status states for dialog form
   const [tenantName, setTenantName] = useState("");
-  const [tenantStatus, setTenantStatus] = useState<"active" | "inactive">("inactive");
+  const [statusActive, setStatusActive] = useState(false);
+  const [statusInactive, setStatusInactive] = useState(true); // ✅ default to Inactive
 
   const [errors, setErrors] = useState({ tenantName: "", tenantStatus: "" });
 
@@ -54,6 +56,7 @@ export default function TenantGrid() {
       isMounted.current = false;
     };
   }, []);
+
 
   useEffect(() => {
     fetchTenants();
@@ -80,10 +83,28 @@ export default function TenantGrid() {
     { field: "schema", headerName: "Schema", flex: 1 },
     { field: "created_at", headerName: "Created At", flex: 1 },
     { field: "last_modified", headerName: "Last Modified", flex: 1 },
+    {
+      field: "actions",
+      type: "actions",
+      headerName: "Actions",
+      getActions: (params) => [
+        <GridActionsCellItem
+          key="edit"
+          label="Edit"
+          onClick={() => handleEdit(params.row.schema)}
+          showInMenu
+        />,
+        <GridActionsCellItem key="delete" label="Delete" showInMenu />,
+      ],
+
+    },
   ];
 
   const fetchTenants = async () => {
+    if (!isMounted.current) return;
+
     setGridLoading(true);
+
     try {
       const variables = {
         skip: paginationModel.page * paginationModel.pageSize,
@@ -108,13 +129,18 @@ export default function TenantGrid() {
         setTenants(json.data.tenants.tenants);
         setTotalCount(json.data.tenants.totalCount);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Fetch tenants error:", error);
-      showSnackbar("Failed to load tenants", "error");
+      if (isMounted.current) {
+        showSnackbar(error.message || "Failed to load tenants", "error");
+      }
     } finally {
-      setGridLoading(false);
+      if (isMounted.current) {
+        setGridLoading(false);
+      }
     }
   };
+
 
   const updateTenant = async (input: {
     schema: string;
@@ -137,6 +163,26 @@ export default function TenantGrid() {
     return json.data.updateTenant;
   };
 
+  const createTenant = async (input: {
+    tenant_name: string;
+    tenant_status: "active" | "inactive";
+  }) => {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ query: CREATE_TENANT_MUTATION, variables: { input } }),
+    });
+
+    const json = await res.json();
+
+    if (!res.ok || json.errors) {
+      throw new Error(json.errors?.[0]?.message || "Failed to create tenant");
+    }
+
+    return json.data.createTenant;
+  };
+
   const showSnackbar = (message: string, severity: typeof snackbar.severity) => {
     setSnackbar({ open: true, message, severity });
   };
@@ -144,13 +190,66 @@ export default function TenantGrid() {
   const handleEdit = (schema: string) => {
     const tenant = tenants.find((t) => t.schema === schema);
     if (!tenant) return;
+
     setIsEditing(true);
     setEditingSchema(schema);
     setTenantName(tenant.tenant_name);
-    setTenantStatus(tenant.tenant_status);
+    setStatusActive(tenant.tenant_status === "active");
+    setStatusInactive(tenant.tenant_status === "inactive");
     setErrors({ tenantName: "", tenantStatus: "" });
     setDialogOpen(true);
   };
+
+  const handleSave = async () => {
+    let hasError = false;
+
+    if (!tenantName.trim()) {
+      setErrors((prev) => ({ ...prev, tenantName: "Tenant name is required" }));
+      hasError = true;
+    }
+
+    if (!statusActive && !statusInactive) {
+      setErrors((prev) => ({ ...prev, tenantStatus: "Select tenant status" }));
+      hasError = true;
+    }
+
+    if (hasError) return;
+
+    try {
+      if (isEditing && editingSchema) {
+        await updateTenant({
+          schema: editingSchema,
+          tenant_name: tenantName,
+          tenant_status: statusActive ? "active" : "inactive",
+        });
+
+        showSnackbar("Tenant updated successfully", "success");
+      } else {
+        await createTenant({
+          tenant_name: tenantName,
+          tenant_status: statusActive ? "active" : "inactive",
+        });
+
+        showSnackbar("Tenant created successfully", "success");
+      }
+
+      // Refresh grid after save
+      fetchTenants();
+
+      // Reset form
+      setDialogOpen(false);
+      setTenantName("");
+      setStatusActive(false);
+      setStatusInactive(true);
+      setErrors({ tenantName: "", tenantStatus: "" });
+      setIsEditing(false);
+      setEditingSchema(null);
+    } catch (error: any) {
+      console.error("Save error:", error);
+      showSnackbar(error.message || "Failed to save tenant", "error");
+    }
+  };
+
 
   const processRowUpdate = async (updatedRow: Tenant, oldRow: Tenant) => {
     const hasChanged =
@@ -165,6 +264,7 @@ export default function TenantGrid() {
         tenant_name: updatedRow.tenant_name,
         tenant_status: updatedRow.tenant_status,
       });
+
       showSnackbar("Tenant updated successfully", "success");
       return updated;
     } catch (error: any) {
@@ -190,7 +290,8 @@ export default function TenantGrid() {
           setIsEditing(false);
           setDialogOpen(true);
           setTenantName("");
-          setTenantStatus("inactive");
+          setStatusActive(false);
+          setStatusInactive(true); // ✅ default to Inactive on open
           setErrors({ tenantName: "", tenantStatus: "" });
           setEditingSchema(null);
         }}
@@ -223,13 +324,14 @@ export default function TenantGrid() {
         open={dialogOpen}
         tenantName={tenantName}
         setTenantName={setTenantName}
-        tenantStatus={tenantStatus}
-        setTenantStatus={setTenantStatus}
+        statusActive={statusActive}
+        setStatusActive={setStatusActive}
+        statusInactive={statusInactive}
+        setStatusInactive={setStatusInactive}
         errors={errors}
+        setErrors={setErrors}
         onClose={() => setDialogOpen(false)}
-        onSave={() => {
-          // Add or update save logic as needed
-        }}
+        onSave={handleSave}
         isEditing={isEditing}
       />
     </Box>

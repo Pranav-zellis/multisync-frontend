@@ -1,8 +1,13 @@
-// TenantDialog.tsx
 "use client";
 
-import React, { useEffect } from "react";
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button } from "@mui/material";
+import React from "react";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+} from "@mui/material";
 import TenantForm from "./TenantForm";
 
 interface TenantDialogProps {
@@ -13,7 +18,16 @@ interface TenantDialogProps {
   setStatusActive: (val: boolean) => void;
   statusInactive: boolean;
   setStatusInactive: (val: boolean) => void;
-  errors: { tenantName: string; tenantStatus: string };
+  errors: {
+    tenantName: string;
+    tenantStatus: string;
+  };
+  setErrors: React.Dispatch<
+    React.SetStateAction<{
+      tenantName: string;
+      tenantStatus: string;
+    }>
+  >;
   onClose: () => void;
   onSave: () => void;
   isEditing: boolean;
@@ -28,6 +42,7 @@ export default function TenantDialog({
   statusInactive,
   setStatusInactive,
   errors,
+  setErrors,
   onClose,
   onSave,
   isEditing,
@@ -44,6 +59,7 @@ export default function TenantDialog({
           statusInactive={statusInactive}
           setStatusInactive={setStatusInactive}
           errors={errors}
+          setErrors={setErrors}
         />
       </DialogContent>
       <DialogActions>

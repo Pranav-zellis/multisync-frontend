@@ -1,10 +1,7 @@
 "use client";
 
-import UserTable from "@/super_admin_portal/admin_users/UsersTable";
-import { Card, CardContent, Typography } from "@mui/material";
+import SuperUserGrid from "@/super_admin_portal/admin_users/components/SuperUserGrid";
 
 export default function UsersPage() {
-  return (
-      <UserTable />
-  );
+  return <SuperUserGrid />;
 }

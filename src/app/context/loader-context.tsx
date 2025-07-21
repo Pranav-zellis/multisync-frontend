@@ -63,6 +63,8 @@ export function LoaderProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timeout);
   }, [pathname]);
 
+  
+
   return (
     <LoaderContext.Provider value={{ showLoader, hideLoader, loading }}>
       {loading && <GlobalLoader />}
@@ -70,3 +72,4 @@ export function LoaderProvider({ children }: { children: React.ReactNode }) {
     </LoaderContext.Provider>
   );
 }
+

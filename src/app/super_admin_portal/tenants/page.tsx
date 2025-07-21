@@ -1,10 +1,7 @@
-'use client';
+"use client";
 
-import TenantTable from '@/super_admin_portal/tenants/TenantTable';
-import { Card, CardContent, Typography } from '@mui/material';
+import TenantGrid from "./components/TenantGrid";
 
 export default function TenantPage() {
-  return (
-    <TenantTable />
-  );
+  return <TenantGrid />;
 }

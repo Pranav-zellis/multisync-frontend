@@ -5,9 +5,8 @@ import {
   DataGrid,
   GridPaginationModel,
   GridCellModesModel,
-  GridActionsCellItem
 } from "@mui/x-data-grid";
-import { Box } from "@mui/material";
+import { Box, IconButton, Menu, MenuItem } from "@mui/material";
 import TenantToolbar from "./TenantToolbar";
 import TenantDialog from "./TenantDialog";
 import GlobalSnackbar from "@/components/GlobalSnackbar";
@@ -18,6 +17,11 @@ import {
   UPDATE_TENANT_MUTATION,
 } from "../ts/schema";
 import { useGlobalLoader } from "@/context/loader-context";
+import TenantActionsMenu from "./TenantActions"; // adjust path if needed
+
+
+
+// ✅ Inline sub-component for actions menu
 
 export default function TenantGrid() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -34,10 +38,9 @@ export default function TenantGrid() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingSchema, setEditingSchema] = useState<string | null>(null);
 
-  // Tenant name and status states for dialog form
   const [tenantName, setTenantName] = useState("");
   const [statusActive, setStatusActive] = useState(false);
-  const [statusInactive, setStatusInactive] = useState(true); // ✅ default to Inactive
+  const [statusInactive, setStatusInactive] = useState(true);
 
   const [errors, setErrors] = useState({ tenantName: "", tenantStatus: "" });
 
@@ -56,7 +59,6 @@ export default function TenantGrid() {
       isMounted.current = false;
     };
   }, []);
-
 
   useEffect(() => {
     fetchTenants();
@@ -85,24 +87,18 @@ export default function TenantGrid() {
     { field: "last_modified", headerName: "Last Modified", flex: 1 },
     {
       field: "actions",
-      type: "actions",
-      headerName: "Actions",
-      getActions: (params) => [
-        <GridActionsCellItem
-          key="edit"
-          label="Edit"
-          onClick={() => handleEdit(params.row.schema)}
-          showInMenu
-        />,
-        <GridActionsCellItem key="delete" label="Delete" showInMenu />,
-      ],
-
+      headerName: "",
+      flex: 0.3,
+      sortable: false,
+      filterable: false,
+      renderCell: (params: any) => (
+        <TenantActionsMenu schema={params.row.schema} />
+      ),
     },
   ];
 
   const fetchTenants = async () => {
     if (!isMounted.current) return;
-
     setGridLoading(true);
 
     try {
@@ -140,7 +136,6 @@ export default function TenantGrid() {
       }
     }
   };
-
 
   const updateTenant = async (input: {
     schema: string;
@@ -216,27 +211,24 @@ export default function TenantGrid() {
     if (hasError) return;
 
     try {
+      showLoader();
+
       if (isEditing && editingSchema) {
         await updateTenant({
           schema: editingSchema,
           tenant_name: tenantName,
           tenant_status: statusActive ? "active" : "inactive",
         });
-
         showSnackbar("Tenant updated successfully", "success");
       } else {
         await createTenant({
           tenant_name: tenantName,
           tenant_status: statusActive ? "active" : "inactive",
         });
-
         showSnackbar("Tenant created successfully", "success");
       }
 
-      // Refresh grid after save
       fetchTenants();
-
-      // Reset form
       setDialogOpen(false);
       setTenantName("");
       setStatusActive(false);
@@ -247,9 +239,10 @@ export default function TenantGrid() {
     } catch (error: any) {
       console.error("Save error:", error);
       showSnackbar(error.message || "Failed to save tenant", "error");
+    } finally {
+      hideLoader();
     }
   };
-
 
   const processRowUpdate = async (updatedRow: Tenant, oldRow: Tenant) => {
     const hasChanged =
@@ -264,7 +257,6 @@ export default function TenantGrid() {
         tenant_name: updatedRow.tenant_name,
         tenant_status: updatedRow.tenant_status,
       });
-
       showSnackbar("Tenant updated successfully", "success");
       return updated;
     } catch (error: any) {
@@ -291,7 +283,7 @@ export default function TenantGrid() {
           setDialogOpen(true);
           setTenantName("");
           setStatusActive(false);
-          setStatusInactive(true); // ✅ default to Inactive on open
+          setStatusInactive(true);
           setErrors({ tenantName: "", tenantStatus: "" });
           setEditingSchema(null);
         }}

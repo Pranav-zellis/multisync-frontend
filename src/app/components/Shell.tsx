@@ -316,7 +316,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         >
           <MenuItem onClick={() => setAnchorEl(null)}>Profile</MenuItem>
 
-          {user?.groups?.length > 1 && (
+          {(user?.groups?.length > 1 || user?.groups?.includes('*')) && (
             <MenuItem
               onClick={() => {
                 setAnchorEl(null);
@@ -328,6 +328,8 @@ export default function Shell({ children }: { children: React.ReactNode }) {
               Change Account
             </MenuItem>
           )}
+
+
 
           <MenuItem
             onClick={() => {

@@ -7,15 +7,16 @@ export default function AdminNotFound() {
   return (
     <Box
       sx={{
-        height: "100vh",
-        textAlign: "center",
+        height: "70vh",
+        overflow: "hidden",      // disables scrolling
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
         justifyContent: "center",
-        px: 2,
+        alignItems: "center",
+        textAlign: "center",
       }}
     >
+
       <Typography variant="h3" fontWeight="bold" gutterBottom>
         404 - Admin Page Not Found
       </Typography>

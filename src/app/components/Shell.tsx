@@ -67,13 +67,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     const tenant = Cookies.get("tenant");
 
     // // Condition 1: If not logged in, redirect to "/"
-    // if (!user) {
-    //   if (pathname !== "/") {
-    //     showLoader();
-    //     router.replace("/");
-    //   }
-    //   return;
-    // }
+    if (!user) {
+      if (pathname !== "/") {
+        // showLoader();
+        router.replace("/");
+      }
+      // return;
+    }
 
     // Condition 2: Multiple groups or "*" group, no tenant selected
     // if ((hasMultipleGroups || hasWildcardGroup) && !tenant) {

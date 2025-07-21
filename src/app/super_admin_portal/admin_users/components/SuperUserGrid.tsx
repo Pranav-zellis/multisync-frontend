@@ -14,9 +14,10 @@ import GlobalSnackbar from "@/components/GlobalSnackbar";
 import SuperUserDialog from "./SuperUserDialog";
 import SuperUserDeleteDialog from "./SuperUserDeleteDialog";
 import SuperUserToolbar from "./SuperUserToolbar";
+import { useGlobalLoader } from "@/context/loader-context";
 import {
-  DELETE_SUPER_ADMIN,
-  GET_SUPER_ADMIN
+    DELETE_SUPER_ADMIN,
+    GET_SUPER_ADMIN
 } from "../ts/schema";
 
 export interface SuperUser {
@@ -29,6 +30,7 @@ export interface SuperUser {
 }
 
 export default function SuperUserGrid() {
+    const { showLoader, hideLoader } = useGlobalLoader();
     const [users, setUsers] = useState<SuperUser[]>([]);
     const [total, setTotal] = useState(0);
     const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
@@ -109,6 +111,7 @@ export default function SuperUserGrid() {
 
     const handleConfirmDelete = async () => {
         try {
+            showLoader();
             if (!selectedUser?.username) {
                 throw new Error("Selected user is invalid or missing username.");
             }
@@ -122,7 +125,6 @@ export default function SuperUserGrid() {
                     variables: {
                         input: {
                             username: selectedUser.username,
-                            userPoolId: "ap-southeast-2_jYpTYYTfk",
                         },
                     },
                 }),
@@ -138,9 +140,11 @@ export default function SuperUserGrid() {
             setUsers((prev) => prev.filter((u) => u.id !== selectedUser.id));
         } catch (err: any) {
             showSnackbar(err.message, "error");
+            hideLoader();
         } finally {
             setSelectedUser(null);
             setDeleteDialogOpen(false);
+            hideLoader();
         }
     };
 
@@ -199,8 +203,12 @@ export default function SuperUserGrid() {
             <SuperUserDialog
                 open={dialogOpen}
                 user={selectedUser}
-                inviterName="developer" // or pass as prop if dynamic
+                inviterName={selectedUser?.username || ""}
                 isEditing={isEditing}
+                usersRole="Super Admin"               // ✅ passed here
+                groups={["*"]}    
+                title={isEditing ? "Edit Super Admin User" : "Create Super Admin User"}                     // ✅ passed here
+                button_title= "Super Admin"                     // ✅ passed here
                 onClose={() => {
                     setDialogOpen(false);
                     setSelectedUser(null);
@@ -212,6 +220,7 @@ export default function SuperUserGrid() {
                 }}
                 setSnackbar={setSnackbar}
             />
+
 
             <SuperUserDeleteDialog
                 open={deleteDialogOpen}

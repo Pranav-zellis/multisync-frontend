@@ -6,7 +6,7 @@ import {
   GridPaginationModel,
   GridCellModesModel,
 } from "@mui/x-data-grid";
-import { Box, IconButton, Menu, MenuItem } from "@mui/material";
+import { Box } from "@mui/material";
 import TenantToolbar from "./TenantToolbar";
 import TenantDialog from "./TenantDialog";
 import GlobalSnackbar from "@/components/GlobalSnackbar";
@@ -17,13 +17,21 @@ import {
   UPDATE_TENANT_MUTATION,
 } from "../ts/schema";
 import { useGlobalLoader } from "@/context/loader-context";
-import TenantActionsMenu from "./TenantActions"; // adjust path if needed
+import TenantActionsMenu from "./TenantActions";
+import SuperUserDialog from "../../admin_users/components/SuperUserDialog";
+import { useAuth } from "@/context/auth-context";
 
-
-
-// ✅ Inline sub-component for actions menu
+export interface SuperUser {
+  id: string;
+  username: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
+}
 
 export default function TenantGrid() {
+  const { user, loading: authLoading } = useAuth();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
@@ -35,13 +43,14 @@ export default function TenantGrid() {
   const [search, setSearch] = useState("");
 
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [superUserDialogOpen, setSuperUserDialogOpen] = useState(false);
+
   const [isEditing, setIsEditing] = useState(false);
   const [editingSchema, setEditingSchema] = useState<string | null>(null);
-
   const [tenantName, setTenantName] = useState("");
   const [statusActive, setStatusActive] = useState(false);
   const [statusInactive, setStatusInactive] = useState(true);
-
+  const [selectedUser, setSelectedUser] = useState<SuperUser | null>(null);
   const [errors, setErrors] = useState({ tenantName: "", tenantStatus: "" });
 
   const [snackbar, setSnackbar] = useState({
@@ -92,8 +101,13 @@ export default function TenantGrid() {
       sortable: false,
       filterable: false,
       renderCell: (params: any) => (
-        <TenantActionsMenu schema={params.row.schema} />
+        <TenantActionsMenu
+          schema={params.row.schema}
+          tenantName={params.row.tenant_name} // ✅ pass this
+          onCreateAdmin={handleCreateAdminClick}
+        />
       ),
+
     },
   ];
 
@@ -127,9 +141,7 @@ export default function TenantGrid() {
       }
     } catch (error: any) {
       console.error("Fetch tenants error:", error);
-      if (isMounted.current) {
-        showSnackbar(error.message || "Failed to load tenants", "error");
-      }
+      showSnackbar(error.message || "Failed to load tenants", "error");
     } finally {
       if (isMounted.current) {
         setGridLoading(false);
@@ -266,6 +278,21 @@ export default function TenantGrid() {
     }
   };
 
+  const handleCreateAdminClick = (schema: string, tenantName: string) => {
+    setSelectedUser({
+      id: "",
+      username: "",
+      first_name: "",
+      last_name: "",
+      email: "",
+      phone_number: "",
+    });
+    setEditingSchema(schema); // optional if needed later
+    setTenantName(tenantName); // for dialog title if needed
+    setSuperUserDialogOpen(true);
+  };
+
+
   return (
     <Box>
       <GlobalSnackbar
@@ -326,6 +353,27 @@ export default function TenantGrid() {
         onSave={handleSave}
         isEditing={isEditing}
       />
+
+      <SuperUserDialog
+        open={superUserDialogOpen}
+        user={selectedUser}
+        inviterName={user?.username || ""}
+        title={isEditing ? "Edit Admin User" : `Create Admin for "${tenantName}"`}
+        isEditing={false}
+        usersRole="Admin"
+        button_title="Admin"
+        groups={[tenantName]} // ✅ set dynamic group based on tenant name
+        onClose={() => {
+          setSuperUserDialogOpen(false);
+          setSelectedUser(null);
+        }}
+        onSuccess={() => {
+          setSuperUserDialogOpen(false);
+          setSelectedUser(null);
+        }}
+        setSnackbar={setSnackbar}
+      />
+
     </Box>
   );
 }

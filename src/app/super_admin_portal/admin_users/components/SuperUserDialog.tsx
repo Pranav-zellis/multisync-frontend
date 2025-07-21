@@ -1,30 +1,18 @@
 "use client";
 
+// SuperUserDialog.tsx
 import {
     Dialog,
     DialogTitle,
     DialogContent,
     DialogActions,
-    TextField,
     Button,
-    Box,
-    Select,
-    MenuItem,
-    Alert,
 } from "@mui/material";
 import { useState, useEffect } from "react";
 import { SuperUser } from "./SuperUserTable";
-import {
-    UPDATE_SUPER_ADMIN
-} from "../ts/schema";
+import { UPDATE_SUPER_ADMIN } from "../ts/schema";
 import { useGlobalLoader } from "@/context/loader-context";
-import SuperUsersForm, {
-    isValidUsername,
-    isValidName,
-    isValidEmail,
-    isPhoneValid,
-} from "./SuperUsersForm";
-
+import SuperUsersForm from "./SuperUsersForm";
 
 interface Props {
     open: boolean;
@@ -32,8 +20,16 @@ interface Props {
     user: SuperUser | null;
     isEditing: boolean;
     inviterName: string;
+    usersRole: string;
+    groups: string[];
+    title: string;
+    button_title: string;
     onSuccess: () => void;
-    setSnackbar: (val: { open: boolean; message: string; severity: "success" | "error" }) => void;
+    setSnackbar: (val: {
+        open: boolean;
+        message: string;
+        severity: "success" | "error";
+    }) => void;
 }
 
 const supportedCountryCodes = ["+91", "+1", "+44", "+61", "+971"];
@@ -44,6 +40,10 @@ export default function SuperUserDialog({
     user,
     isEditing,
     inviterName,
+    usersRole,
+    title,
+    button_title,
+    groups,
     onSuccess,
     setSnackbar,
 }: Props) {
@@ -74,14 +74,6 @@ export default function SuperUserDialog({
             setForm({ countryCode: "+91" });
         }
     }, [open, isEditing, user]);
-
-    const isValidUsername = (username: string) =>
-        username.length <= 50 && /^[a-zA-Z0-9_]+$/.test(username);
-    const isValidName = (name: string) =>
-        name.length <= 50 && /^[a-zA-Z\s]+$/.test(name);
-    const isValidEmail = (email: string) =>
-        /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    const isPhoneValid = (phone: string) => /^[0-9]{6,14}$/.test(phone);
 
     const createUser = async (input: any) => {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`, {
@@ -128,13 +120,12 @@ export default function SuperUserDialog({
         const input = {
             username: form.username,
             email: form.email,
-            userPoolId: "ap-southeast-2_jYpTYYTfk",
             first_name: form.first_name,
             last_name: form.last_name,
             inviter_name: inviterName,
             phone_number: fullPhone,
-            users_role: "Super Admin",
-            groups: ["*"],
+            users_role: usersRole,
+            groups,
         };
 
         try {
@@ -152,13 +143,13 @@ export default function SuperUserDialog({
             setSnackbar({ open: true, message: err.message, severity: "error" });
             hideLoader();
         } finally {
-            hideLoader();  // always hide loader after completion or error
+            hideLoader();
         }
     };
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-            <DialogTitle>{isEditing ? "Edit Super Admin" : "Create Super Admin"}</DialogTitle>
+            <DialogTitle>{title}</DialogTitle>
             <DialogContent dividers>
                 <SuperUsersForm form={form} setForm={setForm} error={error} />
             </DialogContent>
@@ -168,16 +159,12 @@ export default function SuperUserDialog({
                     onClick={handleSubmit}
                     disabled={
                         !form.username ||
-                        !isValidUsername(form.username) ||
                         !form.first_name ||
-                        !isValidName(form.first_name) ||
-                        (form.last_name && !isValidName(form.last_name)) ||
                         !form.email ||
-                        !isValidEmail(form.email) ||
-                        (!!form.phone && !isPhoneValid(form.phone))
+                        (!!form.phone && form.phone.length < 6)
                     }
                 >
-                    {isEditing ? "Update" : "Create"} Super Admin
+                    {isEditing ? "Update" : "Create"} {button_title}
                 </Button>
             </DialogActions>
         </Dialog>

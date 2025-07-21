@@ -5,9 +5,15 @@ import { Menu, MenuItem, Box, Icon } from "@mui/material";
 
 interface TenantActionsMenuProps {
   schema: string;
+  tenantName: string;
+  onCreateAdmin: (schema: string, tenantName: string) => void;
 }
 
-const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({ schema }) => {
+const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
+  schema,
+  tenantName,
+  onCreateAdmin,
+}) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -24,7 +30,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({ schema }) => {
 
     switch (action) {
       case "createAdmin":
-        console.log("Create Admin for:", schema);
+        onCreateAdmin(schema, tenantName); // ✅ pass both
         break;
       case "createUser":
         console.log("Create User for:", schema);
@@ -54,7 +60,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({ schema }) => {
           style={{ cursor: "pointer" }}
           onClick={handleMenuOpen}
         >
-          add_circle
+          more_vert
         </Icon>
       </Box>
 
@@ -69,18 +75,17 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({ schema }) => {
           Create New Admin User
         </MenuItem>
         <MenuItem onClick={() => handleActionClick("createUser")}>
-          Create New Regular User
+          Create New User
         </MenuItem>
         <MenuItem onClick={() => handleActionClick("attachAdmin")}>
-          Attach existing admin to Tenant
+          Attach Existing Admin to Tenant
         </MenuItem>
         <MenuItem onClick={() => handleActionClick("attachUser")}>
-          Attach existing regular user to Tenant
+          Attach Existing Regular User to Tenant
         </MenuItem>
       </Menu>
     </>
   );
-
 };
 
 export default TenantActionsMenu;

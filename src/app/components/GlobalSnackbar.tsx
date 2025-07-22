@@ -19,7 +19,7 @@ export default function GlobalSnackbar({
   open,
   message,
   severity = "info",
-  autoHideDuration = 3000,
+  autoHideDuration = 1000,
   onClose,
   anchorOrigin = { vertical: "top", horizontal: "center" },
 }: GlobalSnackbarProps) {

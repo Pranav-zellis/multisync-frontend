@@ -18,6 +18,8 @@ interface TenantDialogProps {
   setStatusActive: (val: boolean) => void;
   statusInactive: boolean;
   setStatusInactive: (val: boolean) => void;
+  statusFlaggedToDelete: boolean;
+  setStatusFlaggedToDelete: (val: boolean) => void;
   errors: {
     tenantName: string;
     tenantStatus: string;
@@ -41,12 +43,17 @@ export default function TenantDialog({
   setStatusActive,
   statusInactive,
   setStatusInactive,
+  statusFlaggedToDelete,
+  setStatusFlaggedToDelete,
   errors,
   setErrors,
   onClose,
   onSave,
   isEditing,
 }: TenantDialogProps) {
+  const isValidStatus =
+    statusActive || statusInactive || (isEditing && statusFlaggedToDelete);
+
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>{isEditing ? "Edit Tenant" : "Create New Tenant"}</DialogTitle>
@@ -58,8 +65,11 @@ export default function TenantDialog({
           setStatusActive={setStatusActive}
           statusInactive={statusInactive}
           setStatusInactive={setStatusInactive}
+          statusFlaggedToDelete={statusFlaggedToDelete}
+          setStatusFlaggedToDelete={setStatusFlaggedToDelete}
           errors={errors}
           setErrors={setErrors}
+          isEditing={isEditing}
         />
       </DialogContent>
       <DialogActions>
@@ -67,7 +77,7 @@ export default function TenantDialog({
         <Button
           variant="contained"
           onClick={onSave}
-          disabled={!tenantName.trim() || (!statusActive && !statusInactive)}
+          disabled={!tenantName || !isValidStatus}
         >
           {isEditing ? "Update Tenant" : "Create Tenant"}
         </Button>

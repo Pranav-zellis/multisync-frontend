@@ -6,7 +6,6 @@ import {
     GridColDef,
     GridPaginationModel,
     GridActionsCellItem,
-    GridToolbar,
 } from "@mui/x-data-grid";
 import { Box } from "@mui/material";
 
@@ -15,10 +14,8 @@ import SuperUserDialog from "./SuperUserDialog";
 import SuperUserDeleteDialog from "./SuperUserDeleteDialog";
 import SuperUserToolbar from "./SuperUserToolbar";
 import { useGlobalLoader } from "@/context/loader-context";
-import {
-    DELETE_SUPER_ADMIN,
-    GET_SUPER_ADMIN
-} from "../ts/schema";
+import { DELETE_SUPER_ADMIN, GET_SUPER_ADMIN } from "../ts/schema";
+import { useIsMounted } from "@/hooks/useIsMounted";
 
 export interface SuperUser {
     id: string;
@@ -31,6 +28,8 @@ export interface SuperUser {
 
 export default function SuperUserGrid() {
     const { showLoader, hideLoader } = useGlobalLoader();
+
+    // State
     const [users, setUsers] = useState<SuperUser[]>([]);
     const [total, setTotal] = useState(0);
     const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
@@ -50,21 +49,20 @@ export default function SuperUserGrid() {
     const [selectedUser, setSelectedUser] = useState<SuperUser | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-    const isMounted = useRef(true);
+    const isMounted = useIsMounted();
+    const isClient = useRef(false);
 
+    // Set mounted flag
     useEffect(() => {
-        isMounted.current = true;
-        return () => {
-            isMounted.current = false;
-        };
-    }, []);
-
-    useEffect(() => {
+        isClient.current = true;
         fetchUsers();
     }, [paginationModel, search]);
 
+    // Fetch users with abort support and mounted checks
     const fetchUsers = async () => {
         try {
+            showLoader();
+
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -82,36 +80,52 @@ export default function SuperUserGrid() {
             });
 
             const json = await res.json();
+
             if (!res.ok || json.errors) throw new Error("Failed to fetch users");
 
+
             if (isMounted.current) {
+
                 setUsers(json.data.getSuperAdmins.users);
                 setTotal(json.data.getSuperAdmins.totalCount);
             }
         } catch (error: any) {
-            console.error("Fetch users error:", error);
-            showSnackbar(error.message || "Failed to load users", "error");
+            if (isMounted.current) {
+                console.error("Fetch users error:", error);
+                showSnackbar(error.message || "Failed to load users", "error");
+            }
+        } finally {
+            if (isMounted.current) {
+                hideLoader();
+            }
         }
     };
 
+    // Snackbar helper
     const showSnackbar = (message: string, severity: typeof snackbar.severity) => {
         setSnackbar({ open: true, message, severity });
     };
 
+    // Edit user handler
     const handleEdit = (user: SuperUser) => {
         setSelectedUser(user);
         setIsEditing(true);
         setDialogOpen(true);
     };
 
+    // Delete dialog open
     const handleDelete = (user: SuperUser) => {
         setSelectedUser(user);
         setDeleteDialogOpen(true);
     };
 
+    // Confirm user deletion with mounted checks
     const handleConfirmDelete = async () => {
         try {
+            if (!isMounted.current) return;
+
             showLoader();
+
             if (!selectedUser?.username) {
                 throw new Error("Selected user is invalid or missing username.");
             }
@@ -136,19 +150,23 @@ export default function SuperUserGrid() {
                 throw new Error(json.errors?.[0]?.message || "Failed to delete user");
             }
 
+            if (!isMounted.current) return;
+
             showSnackbar("User deleted successfully!", "success");
             setUsers((prev) => prev.filter((u) => u.id !== selectedUser.id));
         } catch (err: any) {
+            if (!isMounted.current) return;
             showSnackbar(err.message, "error");
-            hideLoader();
         } finally {
+            if (!isMounted.current) return;
+
             setSelectedUser(null);
             setDeleteDialogOpen(false);
             hideLoader();
         }
     };
 
-
+    // DataGrid columns including actions
     const columns: GridColDef[] = [
         { field: "id", headerName: "ID", width: 90 },
         { field: "username", headerName: "Username", flex: 1 },
@@ -161,11 +179,23 @@ export default function SuperUserGrid() {
             type: "actions",
             headerName: "Actions",
             getActions: (params) => [
-                <GridActionsCellItem label="Edit" onClick={() => handleEdit(params.row)} showInMenu />,
-                <GridActionsCellItem label="Delete" onClick={() => handleDelete(params.row)} showInMenu />,
+                <GridActionsCellItem
+                    key="edit"
+                    label="Edit"
+                    onClick={() => handleEdit(params.row)}
+                    showInMenu
+                />,
+                <GridActionsCellItem
+                    key="delete"
+                    label="Delete"
+                    onClick={() => handleDelete(params.row)}
+                    showInMenu
+                />,
             ],
         },
     ];
+
+    if (!isClient.current) return null;
 
     return (
         <Box>
@@ -185,7 +215,6 @@ export default function SuperUserGrid() {
                     setIsEditing(false);
                 }}
             />
-            {/* Optional search bar or toolbar could go here */}
 
             <Box sx={{ overflowX: "auto" }}>
                 <DataGrid
@@ -205,22 +234,23 @@ export default function SuperUserGrid() {
                 user={selectedUser}
                 inviterName={selectedUser?.username || ""}
                 isEditing={isEditing}
-                usersRole="Super Admin"               // ✅ passed here
-                groups={["*"]}    
-                title={isEditing ? "Edit Super Admin User" : "Create Super Admin User"}                     // ✅ passed here
-                button_title= "Super Admin"                     // ✅ passed here
+                usersRole="Super Admin"
+                groups={["*"]}
+                title={isEditing ? "Edit Super Admin User" : "Create Super Admin User"}
+                button_title="Super Admin"
                 onClose={() => {
                     setDialogOpen(false);
                     setSelectedUser(null);
                 }}
-                onSuccess={() => {
-                    fetchUsers(); // refetch after create/update
+                onSuccess={async () => {
+                    if (!isMounted.current) return;
+                    await fetchUsers();
+                    if (!isMounted.current) return;
                     setDialogOpen(false);
                     setSelectedUser(null);
                 }}
                 setSnackbar={setSnackbar}
             />
-
 
             <SuperUserDeleteDialog
                 open={deleteDialogOpen}

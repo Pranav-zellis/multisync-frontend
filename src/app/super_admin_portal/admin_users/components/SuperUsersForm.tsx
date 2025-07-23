@@ -1,13 +1,7 @@
 "use client";
 
 import React from "react";
-import {
-  TextField,
-  Box,
-  Select,
-  MenuItem,
-  Alert,
-} from "@mui/material";
+import { TextField, Box, Select, MenuItem, Alert } from "@mui/material";
 
 export const supportedCountryCodes = ["+91", "+1", "+44", "+61", "+971"];
 
@@ -20,16 +14,21 @@ export const isValidName = (name: string) =>
 export const isValidEmail = (email: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-export const isPhoneValid = (phone: string) =>
-  /^[0-9]{6,14}$/.test(phone);
+export const isPhoneValid = (phone: string) => /^[0-9]{6,14}$/.test(phone);
 
 interface Props {
   form: any;
   setForm: (val: any) => void;
   error?: string | null;
+  isEditMode?: boolean; // <-- NEW PROP
 }
 
-export default function SuperUsersForm({ form, setForm, error }: Props) {
+export default function SuperUsersForm({
+  form,
+  setForm,
+  error,
+  isEditMode = false,
+}: Props) {
   return (
     <>
       {error && <Alert severity="error">{error}</Alert>}
@@ -46,6 +45,21 @@ export default function SuperUsersForm({ form, setForm, error }: Props) {
             ? "Up to 50 characters. Letters, numbers, underscores only."
             : ""
         }
+        disabled={isEditMode} // <-- DISABLED WHEN EDITING
+      />
+
+      <TextField
+        label="Email"
+        type="email"
+        required
+        fullWidth
+        value={form.email || ""}
+        onChange={(e) => setForm({ ...form, email: e.target.value })}
+        error={!!form.email && !isValidEmail(form.email)}
+        helperText={
+          form.email && !isValidEmail(form.email) ? "Enter a valid email" : ""
+        }
+        disabled={isEditMode} // <-- DISABLED WHEN EDITING
         sx={{ my: 2 }}
       />
 
@@ -77,23 +91,7 @@ export default function SuperUsersForm({ form, setForm, error }: Props) {
         />
       </Box>
 
-      <TextField
-        label="Email"
-        type="email"
-        required
-        fullWidth
-        value={form.email || ""}
-        onChange={(e) => setForm({ ...form, email: e.target.value })}
-        error={!!form.email && !isValidEmail(form.email)}
-        helperText={
-          form.email && !isValidEmail(form.email)
-            ? "Enter a valid email"
-            : ""
-        }
-        sx={{ my: 2 }}
-      />
-
-      <Box display="flex" gap={1}>
+      <Box display="flex" gap={1} sx={{ my: 2 }}>
         <Select
           value={form.countryCode}
           onChange={(e) => setForm({ ...form, countryCode: e.target.value })}

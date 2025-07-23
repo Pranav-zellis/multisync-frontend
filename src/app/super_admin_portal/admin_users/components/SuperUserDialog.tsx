@@ -151,7 +151,8 @@ export default function SuperUserDialog({
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
             <DialogTitle>{title}</DialogTitle>
             <DialogContent dividers>
-                <SuperUsersForm form={form} setForm={setForm} error={error} />
+                <SuperUsersForm form={form} setForm={setForm} isEditMode={isEditing} error={error}/>
+
             </DialogContent>
             <DialogActions>
                 <Button

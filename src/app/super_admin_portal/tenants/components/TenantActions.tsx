@@ -1,7 +1,19 @@
 "use client";
 
 import React, { useState } from "react";
-import { Menu, MenuItem, Box, Icon } from "@mui/material";
+import {
+  Menu,
+  MenuItem,
+  Box,
+  Icon,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+  TextField,
+} from "@mui/material";
 import TenantDialog from "./TenantDialog";
 
 interface Tenant {
@@ -34,18 +46,24 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [confirmInput, setConfirmInput] = useState("");
 
   const [currentTenantName, setTenantName] = useState(tenant.tenant_name);
-  const [statusActive, setStatusActive] = useState(tenant.tenant_status === "active");
-  const [statusInactive, setStatusInactive] = useState(tenant.tenant_status === "inactive");
+  const [statusActive, setStatusActive] = useState(
+    tenant.tenant_status === "active"
+  );
+  const [statusInactive, setStatusInactive] = useState(
+    tenant.tenant_status === "inactive"
+  );
   const [statusFlaggedToDelete, setStatusFlaggedToDelete] = useState(
     tenant.tenant_status === "flagged_to_delete"
   );
 
-  const [errors, setErrors] = useState<{ tenantName: string; tenantStatus: string }>({
-    tenantName: "",
-    tenantStatus: "",
-  });
+  const [errors, setErrors] = useState<{
+    tenantName: string;
+    tenantStatus: string;
+  }>({ tenantName: "", tenantStatus: "" });
 
   const open = Boolean(anchorEl);
 
@@ -65,6 +83,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
     setStatusFlaggedToDelete(tenant.tenant_status === "flagged_to_delete");
     setErrors({ tenantName: "", tenantStatus: "" });
     setDialogOpen(true);
+    handleMenuClose();
   };
 
   const handleDialogClose = () => {
@@ -79,9 +98,9 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
 
   const handleDialogSave = async () => {
     const statusFlags = [statusActive, statusInactive, statusFlaggedToDelete];
-    const numSelected = statusFlags.filter(Boolean).length;
+    const selected = statusFlags.filter(Boolean);
 
-    if (numSelected !== 1) {
+    if (selected.length !== 1) {
       setErrors((prev) => ({
         ...prev,
         tenantStatus: "Select exactly one status",
@@ -97,13 +116,11 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
 
     try {
       showLoader();
-
       await updateTenant({
         schema: tenant.schema,
         tenant_name: currentTenantName,
         tenant_status: newStatus,
       });
-
       showSnackbar("Tenant updated successfully", "success");
       handleDialogClose();
     } catch (error) {
@@ -114,30 +131,32 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
     }
   };
 
-  const handleDelete = async () => {
-    handleMenuClose();
-
+  const confirmTenantDelete = async () => {
     try {
       showLoader();
-
       await updateTenant({
         schema: tenant.schema,
         tenant_name: tenant.tenant_name,
         tenant_status: "flagged_to_delete",
       });
-
       showSnackbar("Tenant flagged for deletion", "success");
     } catch (error) {
       console.error("Delete error:", error);
       showSnackbar("Failed to delete tenant", "error");
     } finally {
       hideLoader();
+      setConfirmDeleteOpen(false);
+      setConfirmInput("");
     }
   };
 
-  const handleActionClick = (action: string) => {
+  const handleDelete = () => {
+    setConfirmDeleteOpen(true);
+    setConfirmInput("");
     handleMenuClose();
+  };
 
+  const handleActionClick = (action: string) => {
     switch (action) {
       case "tenantEdit":
         handleEdit();
@@ -147,15 +166,19 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
         break;
       case "createAdmin":
         onCreateAdmin(tenant.schema, tenant.tenant_name);
+        handleMenuClose();
         break;
       case "createUser":
         console.log("Create new user for:", tenant.schema);
+        handleMenuClose();
         break;
       case "attachAdmin":
         console.log("Attach existing admin to:", tenant.schema);
+        handleMenuClose();
         break;
       case "attachUser":
         console.log("Attach existing user to:", tenant.schema);
+        handleMenuClose();
         break;
       default:
         break;
@@ -164,7 +187,13 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
 
   return (
     <>
-      <Box display="flex" alignItems="center" justifyContent="center" width="100%" height="100%">
+      {/* Actions Icon */}
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="100%"
+      >
         <Icon
           className="material-symbols-outlined"
           style={{ cursor: "pointer" }}
@@ -174,6 +203,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
         </Icon>
       </Box>
 
+      {/* Action Menu */}
       <Menu
         anchorEl={anchorEl}
         open={open}
@@ -181,12 +211,21 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        <MenuItem onClick={() => handleActionClick("tenantEdit")}>Edit</MenuItem>
-        <MenuItem onClick={() => handleActionClick("tenantDelete")}>Delete</MenuItem>
-        <MenuItem onClick={() => handleActionClick("createAdmin")}>Create New Admin User</MenuItem>
-        <MenuItem onClick={() => handleActionClick("createUser")}>Create New User</MenuItem>
+        <MenuItem onClick={() => handleActionClick("tenantEdit")}>
+          Edit
+        </MenuItem>
+        <MenuItem onClick={() => handleActionClick("tenantDelete")}>
+          Delete
+        </MenuItem>
+        <MenuItem onClick={() => handleActionClick("createAdmin")}>
+          Create New Admin User
+        </MenuItem>
+        <MenuItem onClick={() => handleActionClick("createUser")}>
+          Create New User
+        </MenuItem>
       </Menu>
 
+      {/* Edit Dialog */}
       <TenantDialog
         open={dialogOpen}
         tenantName={currentTenantName}
@@ -203,6 +242,66 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
         onSave={handleDialogSave}
         isEditing={isEditing}
       />
+
+      {/* Confirm Delete Dialog with Text Confirmation */}
+      <Dialog
+        open={confirmDeleteOpen}
+        onClose={() => {
+          setConfirmDeleteOpen(false);
+          setConfirmInput("");
+        }}
+        maxWidth="xs" // you can keep or remove this
+        fullWidth // keeps full width within maxWidth
+        PaperProps={{
+          sx: {
+            width: 500, // your custom width in px
+            maxWidth: "100%", // ensures responsive on small screens
+          },
+        }}
+      >
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            This is a destructive process. Upon confirming,
+            <strong>{tenant.tenant_name}</strong> tenant will be deleted
+            forever.
+            <br />
+            <br />
+            Please type <strong>{tenant.tenant_name}</strong> in the input below
+            to confirm.
+          </DialogContentText>
+          <TextField
+            fullWidth
+            margin="normal"
+            label="Confirm tenant name"
+            variant="outlined"
+            value={confirmInput}
+            onChange={(e) => setConfirmInput(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setConfirmDeleteOpen(false);
+              setConfirmInput("");
+            }}
+            color="inherit"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={confirmTenantDelete}
+            color="error"
+            variant="contained"
+            disabled={
+              confirmInput.trim().toLowerCase() !==
+              tenant.tenant_name.trim().toLowerCase()
+            }
+          >
+            Confirm Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };

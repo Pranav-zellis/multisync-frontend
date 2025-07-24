@@ -49,6 +49,7 @@ export default function SuperUserGrid() {
   const [selectedUser, setSelectedUser] = useState<SuperUser | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
+  const [gridLoading, setGridLoading] = useState(false);
   const isMounted = useIsMounted();
   const isClient = useRef(false);
 
@@ -60,9 +61,8 @@ export default function SuperUserGrid() {
 
   // Fetch users with abort support and mounted checks
   const fetchUsers = async () => {
+    setGridLoading(true);
     try {
-      showLoader();
-
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`,
         {
@@ -97,7 +97,7 @@ export default function SuperUserGrid() {
       }
     } finally {
       if (isMounted.current) {
-        hideLoader();
+        setGridLoading(false);
       }
     }
   };
@@ -223,7 +223,7 @@ export default function SuperUserGrid() {
         }}
       />
 
-      <Box sx={{ overflowX: "auto" }}>
+      <Box sx={{ width: "100%", overflowX: "auto" }}>
         <DataGrid
           rows={users}
           columns={columns}
@@ -233,6 +233,7 @@ export default function SuperUserGrid() {
           onPaginationModelChange={setPaginationModel}
           paginationMode="server"
           autoHeight
+          sx={{ minWidth: 650 }} // Prevents columns squishing too much on desktop
         />
       </Box>
 

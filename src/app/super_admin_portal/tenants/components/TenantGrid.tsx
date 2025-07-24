@@ -58,7 +58,6 @@ export default function TenantGrid() {
   const [errors, setErrors] = useState({ tenantName: "", tenantStatus: "" });
   const [statusFlaggedToDelete, setStatusFlaggedToDelete] = useState(false);
 
-
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -239,7 +238,7 @@ export default function TenantGrid() {
       email: "",
       phone_number: "",
     });
-    setEditingSchema(schema);
+    setEditingSchema(schema); // <--- stores schema (tenant_id)
     setTenantName(tenantName);
     setSuperUserDialogOpen(true);
   };
@@ -310,7 +309,7 @@ export default function TenantGrid() {
         }}
       />
 
-      <Box sx={{ overflowX: "auto" }}>
+      <Box sx={{ width: "100%", overflowX: "auto" }}>
         <DataGrid
           rows={tenants}
           columns={columns}
@@ -330,6 +329,7 @@ export default function TenantGrid() {
           disableRowSelectionOnClick
           experimentalFeatures={{ newEditingApi: true }}
           autoHeight
+          sx={{ minWidth: 650 }}
         />
       </Box>
 
@@ -360,7 +360,8 @@ export default function TenantGrid() {
         isEditing={false}
         usersRole="Admin"
         button_title="Admin"
-        groups={[tenantName]}
+        groups={[tenantName]} // currently only tenantName
+        tenantId={editingSchema} // <-- Pass schema here
         onClose={() => {
           setSuperUserDialogOpen(false);
           setSelectedUser(null);

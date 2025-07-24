@@ -3,8 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/auth-context';
-import { useGlobalLoader } from '@/context/loader-context'; // ✅ Global loader
-import LoginForm from '@/components/LoginForm';
+import { useGlobalLoader } from '@/context/loader-context';
 import Cookies from 'js-cookie';
 
 export default function Home() {
@@ -14,27 +13,24 @@ export default function Home() {
 
   useEffect(() => {
     if (loading) {
-      showLoader();
+      // showLoader();
       return;
     }
 
-    if (user) {
-      showLoader();
-
+    console.log(user);
+    const token = Cookies.get("id_token");
+    if (user && token) {
       const tenant = Cookies.get('tenant');
       if (tenant) {
         router.replace('/dashboard');
       } else {
         router.replace('/tenants');
       }
-
       return;
     }
-
-    hideLoader();
+    // 🔴 If not authenticated, redirect to Cognito login
+    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`;
   }, [user, loading]);
 
-  if (loading || user) return null;
-
-  return <LoginForm />;
+  return null; 
 }

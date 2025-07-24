@@ -16,6 +16,8 @@ interface TenantFormProps {
   setStatusActive: (val: boolean) => void;
   statusInactive: boolean;
   setStatusInactive: (val: boolean) => void;
+  statusFlaggedToDelete: boolean;
+  setStatusFlaggedToDelete: (val: boolean) => void;
   errors: {
     tenantName: string;
     tenantStatus: string;
@@ -26,6 +28,7 @@ interface TenantFormProps {
       tenantStatus: string;
     }>
   >;
+  isEditing: boolean;
 }
 
 export default function TenantForm({
@@ -35,8 +38,11 @@ export default function TenantForm({
   setStatusActive,
   statusInactive,
   setStatusInactive,
+  statusFlaggedToDelete,
+  setStatusFlaggedToDelete,
   errors,
   setErrors,
+  isEditing,
 }: TenantFormProps) {
   return (
     <Box display="flex" flexDirection="column" gap={3}>
@@ -48,7 +54,6 @@ export default function TenantForm({
         onChange={(e) => {
           const name = e.target.value;
           setTenantName(name);
-          // Clear tenantName error on valid input
           if (name.trim()) {
             setErrors((prev) => ({ ...prev, tenantName: "" }));
           }
@@ -61,7 +66,7 @@ export default function TenantForm({
         <Typography fontWeight={500} mb={0.5}>
           Tenant Status
         </Typography>
-        <Box display="flex" gap={4}>
+        <Box display="flex" gap={4} flexWrap="wrap">
           <FormControlLabel
             control={
               <Checkbox
@@ -69,9 +74,9 @@ export default function TenantForm({
                 onChange={(e) => {
                   const checked = e.target.checked;
                   setStatusActive(checked);
-
                   if (checked) {
                     setStatusInactive(false);
+                    setStatusFlaggedToDelete(false);
                     setErrors((prev) => ({ ...prev, tenantStatus: "" }));
                   }
                 }}
@@ -86,9 +91,9 @@ export default function TenantForm({
                 onChange={(e) => {
                   const checked = e.target.checked;
                   setStatusInactive(checked);
-
                   if (checked) {
                     setStatusActive(false);
+                    setStatusFlaggedToDelete(false);
                     setErrors((prev) => ({ ...prev, tenantStatus: "" }));
                   }
                 }}
@@ -96,6 +101,25 @@ export default function TenantForm({
             }
             label="Inactive"
           />
+          {isEditing && (
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={statusFlaggedToDelete}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setStatusFlaggedToDelete(checked);
+                    if (checked) {
+                      setStatusActive(false);
+                      setStatusInactive(false);
+                      setErrors((prev) => ({ ...prev, tenantStatus: "" }));
+                    }
+                  }}
+                />
+              }
+              label="Flagged to Delete"
+            />
+          )}
         </Box>
         {errors.tenantStatus && (
           <Typography variant="caption" color="error">

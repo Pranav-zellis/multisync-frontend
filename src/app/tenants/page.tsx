@@ -1,125 +1,128 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  Button,
-} from "@mui/material";
-import { useRouter } from "next/navigation";
+import { Box, Grid } from "@mui/material";
 import Cookies from "js-cookie";
-import { useGlobalLoader } from "@/context/loader-context"; // ✅ global loader
+import { useRouter } from "next/navigation";
+import { useGlobalLoader } from "@/context/loader-context";
 
-type User = {
-  username?: string;
-  groups?: string[];
+import AccountsHeader from "./components/AccountsHeader";
+import TenantCard from "./components/TenantCard";
+import EmptyState from "./components/EmptyState";
+import { GET_TENANTS_SCHEMA } from "./ts/schema";
+import { useAuth } from "@/context/auth-context";
+
+type Tenant = {
+  schema: string;
+  tenant_name: string;
+  tenant_status: string;
+};
+
+type UserInput = {
+  username: string;
+  email: string;
+  role: string;
 };
 
 export default function AccountsPage() {
+  const [tenants, setTenants] = useState<Tenant[]>([]);
+  const [hasFetched, setHasFetched] = useState(false);
   const router = useRouter();
-  const { showLoader, hideLoader } = useGlobalLoader(); // ✅ hook
-  const [groups, setGroups] = useState<string[]>([]);
+  const { showLoader, hideLoader } = useGlobalLoader();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
+    if (loading) return;
+
+    const token = Cookies.get("id_token");
     const existingTenant = Cookies.get("tenant");
+
+    if (!token) {
+      showLoader();
+      router.replace("/");
+      hideLoader(); // hide after triggering navigation
+      return;
+    }
 
     if (existingTenant) {
       showLoader();
       router.replace("/dashboard");
+      hideLoader(); // hide after triggering navigation
       return;
     }
 
-    showLoader();
-    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`, {
-      credentials: "include",
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((userData: User | null) => {
-        if (userData?.groups) {
-          setGroups(userData.groups);
-        }
-      })
-      .catch(() => {
-        setGroups([]);
-      })
-      .finally(() => {
-        hideLoader();
-      });
-  }, [router]);
+    if (!user || hasFetched) return;
 
-  const handleAccountClick = (groupName: string) => {
+    async function fetchTenants() {
+      try {
+        showLoader();
+
+        const userInput: UserInput = {
+          username: user.username,
+          email: user.customAttributes.email,
+          role: user.customAttributes["custom:users_role"],
+        };
+
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ query: GET_TENANTS_SCHEMA, variables: { user: userInput } }),
+        });
+
+        const json = await res.json();
+
+        if (!res.ok || json.errors) {
+          console.error("Error fetching tenants:", json.errors || res.statusText);
+          setTenants([]);
+        } else {
+          setTenants(json.data.tenantsBySchemas || []);
+        }
+      } catch (error) {
+        console.error("Fetch error:", error);
+        setTenants([]);
+      } finally {
+        hideLoader();
+        setHasFetched(true);
+      }
+    }
+
+    fetchTenants();
+  }, [user, loading, hasFetched, router, showLoader, hideLoader]);
+
+  const handleAccountClick = (schema: string, status: string) => {
+    if (status === "inactive" || status === "flagged_to_delete") return;
+
     showLoader();
-    Cookies.set("tenant", groupName, {
-      path: "/",
-      sameSite: "Lax",
-    });
+    Cookies.set("tenant", schema, { path: "/", sameSite: "Lax" });
+
     router.push("/dashboard");
+
+    // Hide loader after a short delay for smooth transition
+    setTimeout(() => {
+      hideLoader();
+    }, 800);
   };
 
   return (
-    <Box className="p-8">
-      <div className="flex justify-between items-center mb-6">
-        <Typography variant="h4" className="font-semibold text-gray-800">
-          Tenants
-        </Typography>
+    <Box>
+      <AccountsHeader
+        showAdmin={user?.customAttributes?.["custom:users_role"] === "Super Admin"}
+      />
 
-        <Button
-          variant="outlined"
-          sx={{
-            borderColor: "#FFA726",
-            color: "#FFA726",
-            textTransform: "none",
-            borderRadius: 2,
-            px: 2,
-          }}
-          onClick={() => {
-            showLoader();
-            router.push("/super_admin_portal/dashboard");
-          }}
-        >
-          <span className="material-symbols-outlined text-base mr-1">
-            admin_panel_settings
-          </span>
-          Admin Portal
-        </Button>
-      </div>
-
-      {groups.length === 0 ? (
-        <Typography variant="body1" className="text-gray-600 mt-4">
-          No tenants found for your account.
-        </Typography>
+      {tenants.length === 0 ? (
+        <EmptyState />
       ) : (
-        <Grid container spacing={3}>
-          {groups.map((group) => (
-            <Grid item xs={12} sm={6} md={4} lg={3} key={group}>
-              <Card
-                variant="outlined"
-                onClick={() => handleAccountClick(group)}
-                className="transition duration-200 border hover:shadow-md rounded-xl cursor-pointer"
-                sx={{
-                  height: "100%",
-                  borderColor: "#E0E0E0",
-                  "&:hover": {
-                    borderColor: "#FF9800",
-                  },
-                  width: "250px",
-                }}
-              >
-                <CardContent>
-                  <Typography
-                    variant="h6"
-                    className="font-semibold text-gray-800"
-                  >
-                    {group}
-                  </Typography>
-                  <Typography variant="body2" className="text-gray-500">
-                    (Supplier)
-                  </Typography>
-                </CardContent>
-              </Card>
+        <Grid container spacing={2}>
+          {tenants.map((tenant) => (
+            <Grid item xs={12} sm={6} md={4} lg={3} key={tenant.schema}>
+              <Box sx={{ height: "100%" }}>
+                <TenantCard
+                  group={tenant.tenant_name}
+                  status={tenant.tenant_status}
+                  onClick={() => handleAccountClick(tenant.schema, tenant.tenant_status)}
+                />
+              </Box>
             </Grid>
           ))}
         </Grid>

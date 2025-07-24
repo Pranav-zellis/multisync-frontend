@@ -3,15 +3,15 @@
 import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/auth-context';
 
 export default function Home() {
   const router = useRouter();
   const [loading, setLoading] = useState(true); // loading state
+  const { user } = useAuth();
 
   useEffect(() => {
     const token = Cookies.get('id_token');
-    console.log('Token:', token);
-
     if (token) {
       router.push('/super_admin_portal/dashboard');
     } else {

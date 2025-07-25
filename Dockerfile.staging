@@ -35,3 +35,5 @@ EXPOSE 3000
 # Use production mode
 ENV NODE_ENV=production
 CMD ["npm", "run", "start"]   # runs `next start`
+
+

@@ -17,8 +17,8 @@ export const isValidEmail = (email: string) =>
 export const isPhoneValid = (phone: string) => /^[0-9]{6,14}$/.test(phone);
 
 interface Props {
-  form: any;
-  setForm: (val: any) => void;
+  form: unknown;
+  setForm: (val: unknown) => void;
   error?: string | null;
   isEditMode?: boolean; // <-- NEW PROP
 }

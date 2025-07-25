@@ -18,10 +18,9 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
   useEffect(() => {
-    fetch(`${API_URL}/auth/me`, { credentials: "include" })
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`, { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
       .then((userData) => {
         setUser(userData);

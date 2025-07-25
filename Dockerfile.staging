@@ -1,34 +1,38 @@
 # Stage 1: Build
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
-# 0) Accept the API URL at build time and expose to Next.js
+# Accept build-time environment variables
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 WORKDIR /usr/src/app
 
-# 1) Install all dependencies (dev + prod)
+# Install dependencies (including dev dependencies)
 COPY package*.json ./
 RUN npm ci
 
-# 2) Copy source and build the app
+# Copy all source files and build the Next.js app
 COPY . .
 RUN npm run build
 
-# Stage 2: Runtime (slim image)
-FROM node:18-alpine AS runtime
+# Stage 2: Runtime (Slim Production Image)
+FROM node:20-alpine AS runtime
 
 WORKDIR /usr/src/app
 
-# 1) Install only production dependencies
+# Install only production dependencies
 COPY package*.json ./
-RUN npm ci --production
+RUN npm ci --omit=dev
 
-# 2) Copy build output and static assets from builder
+# Copy the build artifacts and public assets from the builder stage
 COPY --from=builder /usr/src/app/.next ./.next
 COPY --from=builder /usr/src/app/public ./public
+COPY --from=builder /usr/src/app/next.config.js ./next.config.js
+COPY --from=builder /usr/src/app/package*.json ./
 
-# 3) Expose and run
-EXPOSE 3000
+# Set environment and expose port
 ENV NODE_ENV=production
+EXPOSE 3000
+
+# Start the Next.js server
 CMD ["npm", "run", "start"]

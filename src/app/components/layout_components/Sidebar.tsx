@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import {
-  Avatar,
   Box,
   Drawer,
   IconButton,
@@ -17,7 +16,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 
 interface SidebarProps {
-  user: any;
+  user: unknown;
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   mobileOpen: boolean;

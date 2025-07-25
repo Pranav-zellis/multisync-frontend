@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, Typography, Grid, Stack, Button } from "@mui/material";
 import TenantDialog from "../../tenants/components/TenantDialog";
 import GlobalSnackbar from "@/components/GlobalSnackbar";
 import { useGlobalLoader } from "@/context/loader-context";
-
 import { CREATE_TENANT_MUTATION } from "../../tenants/ts/schema";
 
 type TenantStatus = {
@@ -41,11 +40,10 @@ export default function TenantStatsCard() {
   });
 
   const router = useRouter();
-  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-  // Extracted function to fetch tenant stats
-  const fetchTenantStats = () => {
-    fetch(`${API_URL}/graphql`, {
+  // Fetch tenant stats
+  const fetchTenantStats = useCallback(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -69,18 +67,18 @@ export default function TenantStatsCard() {
       .catch((err) => {
         console.error("Failed to fetch tenant stats:", err);
       });
-  };
+  }, []);
 
-  // Fetch stats on component mount
   useEffect(() => {
     fetchTenantStats();
-  }, [API_URL]);
+  }, [fetchTenantStats]);
 
+  // Create tenant
   const createTenant = async (input: {
     tenant_name: string;
     tenant_status: "active" | "inactive";
   }) => {
-    const res = await fetch(`${API_URL}/graphql`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -90,8 +88,9 @@ export default function TenantStatsCard() {
       }),
     });
     const json = await res.json();
-    if (!res.ok || json.errors)
+    if (!res.ok || json.errors) {
       throw new Error(json.errors?.[0]?.message || "Failed to create tenant");
+    }
     return json.data.createTenant;
   };
 
@@ -111,8 +110,7 @@ export default function TenantStatsCard() {
       });
       showSnackbar("Tenant created successfully", "success");
 
-      // Refresh tenant stats after creation
-      fetchTenantStats();
+      fetchTenantStats(); // Refresh stats after creating tenant
 
       // Reset and close dialog
       setDialogOpen(false);
@@ -122,10 +120,10 @@ export default function TenantStatsCard() {
       setStatusFlaggedToDelete(false);
       setErrors({});
       setIsEditing(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to save tenant:", error);
-      showSnackbar(error.message || "Failed to save tenant", "error");
-      hideLoader();
+      const errMsg = error instanceof Error ? error.message : "Failed to save tenant";
+      showSnackbar(errMsg, "error");
     } finally {
       hideLoader();
     }
@@ -139,6 +137,7 @@ export default function TenantStatsCard() {
         severity={snackbar.severity}
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
       />
+
       <Card
         sx={{
           height: "100%",
@@ -157,12 +156,7 @@ export default function TenantStatsCard() {
 
         <Grid container spacing={10} justifyContent="center">
           <Grid item xs={6}>
-            <Typography
-              align="left"
-              variant="h4"
-              color="#5071a5"
-              fontWeight={700}
-            >
+            <Typography align="left" variant="h4" color="#5071a5" fontWeight={700}>
               {tenantStatus.active}
             </Typography>
             <Typography align="center" variant="body2">
@@ -170,12 +164,7 @@ export default function TenantStatsCard() {
             </Typography>
           </Grid>
           <Grid item xs={6}>
-            <Typography
-              align="right"
-              variant="h4"
-              color="#5071a5"
-              fontWeight={700}
-            >
+            <Typography align="right" variant="h4" color="#5071a5" fontWeight={700}>
               {tenantStatus.inactive}
             </Typography>
             <Typography align="center" variant="body2">

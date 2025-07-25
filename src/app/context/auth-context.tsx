@@ -6,7 +6,7 @@ import Cookies from "js-cookie";
 import { useGlobalLoader } from "@/context/loader-context";
 
 type AuthContextType = {
-  user: any;
+  user: unknown;
   loading: boolean;
 };
 
@@ -31,9 +31,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const fetchUser = async () => {
       showLoader();
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`, {
-          credentials: "include",
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`,
+          {
+            credentials: "include",
+          }
+        );
 
         if (res.ok) {
           const data = await res.json();
@@ -48,7 +51,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     fetchUser();
-  }, []);
+  }, [showLoader, hideLoader]); // <-- added here
 
   return (
     <AuthContext.Provider value={{ user, loading }}>

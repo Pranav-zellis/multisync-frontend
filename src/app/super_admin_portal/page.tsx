@@ -3,12 +3,10 @@
 import { useEffect, useState } from 'react';
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/auth-context';
 
 export default function Home() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true); // loading state
-  const { user } = useAuth();
+  const [loading] = useState(true); // loading state
 
   useEffect(() => {
     const token = Cookies.get('id_token');

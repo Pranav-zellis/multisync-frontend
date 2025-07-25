@@ -13,11 +13,9 @@ export default function Home() {
 
   useEffect(() => {
     if (loading) {
-      // showLoader();
+      showLoader();
       return;
     }
-
-    console.log(user);
     const token = Cookies.get("id_token");
     if (user && token) {
       const tenant = Cookies.get('tenant');

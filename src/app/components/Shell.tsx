@@ -1,7 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Box, CssBaseline, ThemeProvider, createTheme, useMediaQuery } from "@mui/material";
+import {
+  Box,
+  CssBaseline,
+  ThemeProvider,
+  createTheme,
+  useMediaQuery,
+} from "@mui/material";
 import Cookies from "js-cookie";
 import { useAuth } from "@/context/auth-context";
 import { useGlobalLoader } from "@/context/loader-context";
@@ -33,14 +39,31 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   const isAdminRoute = pathname.includes("/super_admin_portal");
 
-  const navItems = isAdmin && isAdminRoute
-    ? [
-        { label: "Dashboard", href: "/super_admin_portal/dashboard", icon: "dashboard" },
-        { label: "Super admin", href: "/super_admin_portal/admin_users", icon: "admin_panel_settings" },
-        { label: "Tenants", href: "/super_admin_portal/tenants", icon: "groups" },
-        { label: "Settings", href: "/super_admin_portal/settings", icon: "settings" },
-      ]
-    : [{ label: "Dashboard", href: "/dashboard", icon: "dashboard" }];
+  const navItems =
+    isAdmin && isAdminRoute
+      ? [
+          {
+            label: "Dashboard",
+            href: "/super_admin_portal/dashboard",
+            icon: "dashboard",
+          },
+          {
+            label: "Super admin",
+            href: "/super_admin_portal/admin_users",
+            icon: "admin_panel_settings",
+          },
+          {
+            label: "Tenants",
+            href: "/super_admin_portal/tenants",
+            icon: "groups",
+          },
+          {
+            label: "Settings",
+            href: "/super_admin_portal/settings",
+            icon: "settings",
+          },
+        ]
+      : [{ label: "Dashboard", href: "/dashboard", icon: "dashboard" }];
 
   const theme = createTheme({
     palette: { mode: "light", primary: { main: "#FF982E" } },
@@ -76,20 +99,22 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           hideLoader={hideLoader}
           setContentReady={setContentReady}
         />
-
         {/* Sidebar shows only if user exists and path is not /tenants */}
-        {user && pathname !== "/tenants" && (
-          <Sidebar
-            user={user}
-            sidebarOpen={sidebarOpen}
-            setSidebarOpen={setSidebarOpen}
-            mobileOpen={mobileOpen}
-            setMobileOpen={setMobileOpen}
-            isMobile={isMobile}
-            navItems={navItems}
-            showLoader={showLoader}
-          />
-        )}
+        {user &&
+          pathname !== "/tenants" &&
+          (pathname.includes("/super_admin_portal") ||
+            Cookies.get("tenant")) && (
+            <Sidebar
+              user={user}
+              sidebarOpen={sidebarOpen}
+              setSidebarOpen={setSidebarOpen}
+              mobileOpen={mobileOpen}
+              setMobileOpen={setMobileOpen}
+              isMobile={isMobile}
+              navItems={navItems}
+              showLoader={showLoader}
+            />
+          )}
 
         <Box
           component="main"
@@ -130,7 +155,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             {children}
           </Box>
         </Box>
-
         <SessionDialog open={sessionExpired} onRelogin={handleRelogin} />
       </Box>
     </ThemeProvider>

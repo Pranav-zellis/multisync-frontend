@@ -48,8 +48,8 @@ export default function SuperUserDialog({
   onSuccess,
   setSnackbar,
 }: Props) {
-  const [form, setForm] = useState<any>({ countryCode: "+91" });
-  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState<unknown>({ countryCode: "+91" });
+  const [error] = useState<string | null>(null);
   const { showLoader, hideLoader } = useGlobalLoader();
 
   useEffect(() => {
@@ -76,7 +76,7 @@ export default function SuperUserDialog({
     }
   }, [open, isEditing, user]);
 
-  const createUser = async (input: any) => {
+  const createUser = async (input: unknown) => {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -92,7 +92,7 @@ export default function SuperUserDialog({
     }
   };
 
-  const updateUser = async (input: any) => {
+  const updateUser = async (input: unknown) => {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -144,7 +144,7 @@ export default function SuperUserDialog({
         severity: "success",
       });
       onSuccess();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setSnackbar({ open: true, message: err.message, severity: "error" });
       hideLoader();
     } finally {

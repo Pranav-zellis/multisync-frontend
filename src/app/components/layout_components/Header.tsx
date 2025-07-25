@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { Box, IconButton, useMediaQuery } from "@mui/material";
+import Image from "next/image";
+import { Box, IconButton } from "@mui/material";
 
 interface HeaderProps {
   isMobile: boolean;
@@ -19,13 +20,15 @@ export default function Header({ isMobile, mobileOpen, setMobileOpen }: HeaderPr
         alignItems: "center",
       }}
     >
-      <img
+      <Image
         src="/images/ZELLIS_Multisync_dark.svg"
         alt="Logo"
+        width={220}
+        height={22}
         style={{
           width: "auto",
-          height: 22,
-          maxWidth: 220,
+          height: "22px",
+          maxWidth: "220px",
         }}
       />
       {isMobile && (

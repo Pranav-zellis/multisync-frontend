@@ -7,7 +7,7 @@ import Cookies from "js-cookie";
 interface AuthRedirectProps {
   authLoading: boolean;
   pathname: string;
-  user: any;
+  user: unknown;
   showLoader: () => void;
   hideLoader: () => void;
   setContentReady: (ready: boolean) => void;
@@ -116,7 +116,11 @@ export default function AuthRedirect({
 
     if (onlyOneGroup && pathname !== "/dashboard") {
       fetchTenants();
+    }else{
+      
     }
+
+
 
     // If everything is valid, allow content after a short delay
     const timer = setTimeout(() => {

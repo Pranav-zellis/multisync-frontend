@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Box,
   Button,
   Card,
   CardContent,
-  CircularProgress,
   Typography,
 } from "@mui/material";
 import { useGlobalLoader } from "@/context/loader-context";
@@ -16,10 +15,9 @@ import { useAuth } from "@/context/auth-context";
 
 export default function Home() {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
   const [tenant, setTenant] = useState<string | null>(null);
-  const { showLoader, hideLoader } = useGlobalLoader();
-  const { user, loading: authLoading } = useAuth();
+  const { showLoader } = useGlobalLoader();
+  const { user } = useAuth();
 
   useEffect(() => {
     const tenantCookie = Cookies.get("tenant");

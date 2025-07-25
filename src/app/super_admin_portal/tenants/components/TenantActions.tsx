@@ -22,14 +22,16 @@ interface Tenant {
   tenant_status: "active" | "inactive" | "flagged_to_delete";
 }
 
+export interface UpdateTenantInput {
+  schema: string;
+  tenant_name: string;
+  tenant_status: "active" | "inactive" | "flagged_to_delete";
+}
+
 interface TenantActionsMenuProps {
   tenant: Tenant;
   onCreateAdmin: (schema: string, tenantName: string) => void;
-  updateTenant: (data: {
-    schema: string;
-    tenant_name: string;
-    tenant_status: string;
-  }) => Promise<Tenant>;
+  updateTenant: (data: UpdateTenantInput) => Promise<Tenant>;
   showLoader: () => void;
   hideLoader: () => void;
   showSnackbar: (message: string, severity: "success" | "error") => void;
@@ -44,40 +46,34 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
   showSnackbar,
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [confirmInput, setConfirmInput] = useState("");
 
-  const [currentTenantName, setTenantName] = useState(tenant.tenant_name);
-  const [statusActive, setStatusActive] = useState(
-    tenant.tenant_status === "active"
-  );
-  const [statusInactive, setStatusInactive] = useState(
-    tenant.tenant_status === "inactive"
-  );
+  const [currentTenantName, setCurrentTenantName] = useState(tenant.tenant_name);
+  const [statusActive, setStatusActive] = useState(tenant.tenant_status === "active");
+  const [statusInactive, setStatusInactive] = useState(tenant.tenant_status === "inactive");
   const [statusFlaggedToDelete, setStatusFlaggedToDelete] = useState(
     tenant.tenant_status === "flagged_to_delete"
   );
 
-  const [errors, setErrors] = useState<{
-    tenantName: string;
-    tenantStatus: string;
-  }>({ tenantName: "", tenantStatus: "" });
+  const [errors, setErrors] = useState({ tenantName: "", tenantStatus: "" });
 
   const open = Boolean(anchorEl);
 
+  // Menu handlers
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
+  const handleMenuClose = () => setAnchorEl(null);
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
+  // Edit dialog handlers
   const handleEdit = () => {
     setIsEditing(true);
-    setTenantName(tenant.tenant_name);
+    setCurrentTenantName(tenant.tenant_name);
     setStatusActive(tenant.tenant_status === "active");
     setStatusInactive(tenant.tenant_status === "inactive");
     setStatusFlaggedToDelete(tenant.tenant_status === "flagged_to_delete");
@@ -89,37 +85,29 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
   const handleDialogClose = () => {
     setDialogOpen(false);
     setIsEditing(false);
-    setTenantName("");
-    setStatusActive(false);
-    setStatusInactive(false);
-    setStatusFlaggedToDelete(false);
     setErrors({ tenantName: "", tenantStatus: "" });
   };
 
   const handleDialogSave = async () => {
-    const statusFlags = [statusActive, statusInactive, statusFlaggedToDelete];
-    const selected = statusFlags.filter(Boolean);
-
-    if (selected.length !== 1) {
-      setErrors((prev) => ({
-        ...prev,
-        tenantStatus: "Select exactly one status",
-      }));
-      return;
-    }
-
-    const newStatus = statusActive
+    const selectedStatus = statusActive
       ? "active"
       : statusInactive
       ? "inactive"
-      : "flagged_to_delete";
+      : statusFlaggedToDelete
+      ? "flagged_to_delete"
+      : null;
+
+    if (!selectedStatus) {
+      setErrors((prev) => ({ ...prev, tenantStatus: "Select exactly one status" }));
+      return;
+    }
 
     try {
       showLoader();
       await updateTenant({
         schema: tenant.schema,
         tenant_name: currentTenantName,
-        tenant_status: newStatus,
+        tenant_status: selectedStatus,
       });
       showSnackbar("Tenant updated successfully", "success");
       handleDialogClose();
@@ -131,6 +119,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
     }
   };
 
+  // Delete confirmation handlers
   const confirmTenantDelete = async () => {
     try {
       showLoader();
@@ -156,6 +145,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
     handleMenuClose();
   };
 
+  // Menu action handler
   const handleActionClick = (action: string) => {
     switch (action) {
       case "tenantEdit":
@@ -168,19 +158,8 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
         onCreateAdmin(tenant.schema, tenant.tenant_name);
         handleMenuClose();
         break;
-      case "createUser":
-        console.log("Create new user for:", tenant.schema);
-        handleMenuClose();
-        break;
-      case "attachAdmin":
-        console.log("Attach existing admin to:", tenant.schema);
-        handleMenuClose();
-        break;
-      case "attachUser":
-        console.log("Attach existing user to:", tenant.schema);
-        handleMenuClose();
-        break;
       default:
+        handleMenuClose();
         break;
     }
   };
@@ -188,17 +167,8 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
   return (
     <>
       {/* Actions Icon */}
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        height="100%"
-      >
-        <Icon
-          className="material-symbols-outlined"
-          style={{ cursor: "pointer" }}
-          onClick={handleMenuOpen}
-        >
+      <Box display="flex" justifyContent="center" alignItems="center" height="100%">
+        <Icon className="material-symbols-outlined" style={{ cursor: "pointer" }} onClick={handleMenuOpen}>
           more_vert
         </Icon>
       </Box>
@@ -211,25 +181,16 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        <MenuItem onClick={() => handleActionClick("tenantEdit")}>
-          Edit
-        </MenuItem>
-        <MenuItem onClick={() => handleActionClick("tenantDelete")}>
-          Delete
-        </MenuItem>
-        <MenuItem onClick={() => handleActionClick("createAdmin")}>
-          Create New Admin User
-        </MenuItem>
-        <MenuItem onClick={() => handleActionClick("createUser")}>
-          Create New User
-        </MenuItem>
+        <MenuItem onClick={() => handleActionClick("tenantEdit")}>Edit</MenuItem>
+        <MenuItem onClick={() => handleActionClick("tenantDelete")}>Delete</MenuItem>
+        <MenuItem onClick={() => handleActionClick("createAdmin")}>Create New Admin User</MenuItem>
       </Menu>
 
       {/* Edit Dialog */}
       <TenantDialog
         open={dialogOpen}
         tenantName={currentTenantName}
-        setTenantName={setTenantName}
+        setTenantName={setCurrentTenantName}
         statusActive={statusActive}
         setStatusActive={setStatusActive}
         statusInactive={statusInactive}
@@ -243,32 +204,27 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
         isEditing={isEditing}
       />
 
-      {/* Confirm Delete Dialog with Text Confirmation */}
+      {/* Confirm Delete Dialog */}
       <Dialog
         open={confirmDeleteOpen}
         onClose={() => {
           setConfirmDeleteOpen(false);
           setConfirmInput("");
         }}
-        maxWidth="xs" // you can keep or remove this
-        fullWidth // keeps full width within maxWidth
+        maxWidth="xs"
+        fullWidth
         PaperProps={{
-          sx: {
-            width: 500, // your custom width in px
-            maxWidth: "100%", // ensures responsive on small screens
-          },
+          sx: { width: 500, maxWidth: "100%" },
         }}
       >
         <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            This is a destructive process. Upon confirming,
-            <strong>{tenant.tenant_name}</strong> tenant will be deleted
-            forever.
+            This is a destructive process. Upon confirming, <strong>{tenant.tenant_name}</strong> tenant will
+            be permanently deleted.
             <br />
             <br />
-            Please type <strong>{tenant.tenant_name}</strong> in the input below
-            to confirm.
+            Please type <strong>{tenant.tenant_name}</strong> in the input below to confirm.
           </DialogContentText>
           <TextField
             fullWidth
@@ -280,13 +236,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
           />
         </DialogContent>
         <DialogActions>
-          <Button
-            onClick={() => {
-              setConfirmDeleteOpen(false);
-              setConfirmInput("");
-            }}
-            color="inherit"
-          >
+          <Button onClick={() => setConfirmDeleteOpen(false)} color="inherit">
             Cancel
           </Button>
           <Button
@@ -294,8 +244,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
             color="error"
             variant="contained"
             disabled={
-              confirmInput.trim().toLowerCase() !==
-              tenant.tenant_name.trim().toLowerCase()
+              confirmInput.trim().toLowerCase() !== tenant.tenant_name.trim().toLowerCase()
             }
           >
             Confirm Delete

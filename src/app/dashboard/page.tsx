@@ -3,17 +3,11 @@
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Card, CardContent, Typography } from "@mui/material";
 import { useGlobalLoader } from "@/context/loader-context";
 import { useAuth } from "@/context/auth-context";
 
-export default function Home() {
+export default function Dashboard() {
   const router = useRouter();
   const [tenant, setTenant] = useState<string | null>(null);
   const { showLoader } = useGlobalLoader();
@@ -47,7 +41,7 @@ export default function Home() {
                 <strong>Username:</strong> {user.username}
               </Typography>
               <Typography variant="subtitle1">
-                <strong>Email:</strong> {user.customAttributes?.email}
+                <strong>Email:</strong> {user.customAttributes?.email || "N/A"}
               </Typography>
               <Typography variant="subtitle1">
                 <strong>User Pool ID:</strong> {user.userPoolId}
@@ -80,15 +74,9 @@ export default function Home() {
             </>
           ) : (
             <Box mt={2}>
-              <Box mt={2}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  href="/api/auth/login"
-                >
-                  Login
-                </Button>
-              </Box>
+              <Button variant="contained" color="primary" href="/api/auth/login">
+                Login
+              </Button>
             </Box>
           )}
         </CardContent>

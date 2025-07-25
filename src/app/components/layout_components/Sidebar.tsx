@@ -15,8 +15,14 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 
+// Define User type
+interface User {
+  username?: string;
+  groups?: string[];
+}
+
 interface SidebarProps {
-  user: unknown;
+  user: User | null;
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   mobileOpen: boolean;
@@ -279,7 +285,7 @@ export default function Sidebar({
               Profile
             </MenuItem>
 
-            {(user?.groups?.length > 1 || user?.groups?.includes("*")) && (
+            {(user?.groups?.length ?? 0) > 1 || user?.groups?.includes("*") ? (
               <MenuItem
                 onClick={() => {
                   handleMenuClose();
@@ -296,7 +302,7 @@ export default function Sidebar({
                 </span>
                 Change Tenant
               </MenuItem>
-            )}
+            ) : null}
 
             <MenuItem
               onClick={() => {

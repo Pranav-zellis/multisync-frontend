@@ -2,15 +2,21 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, Typography, Grid, Stack, Button } from "@mui/material";
+import { Card, Typography, Stack, Button } from "@mui/material"; // Stable MUI Grid
 import TenantDialog from "../../tenants/components/TenantDialog";
 import GlobalSnackbar from "@/components/GlobalSnackbar";
 import { useGlobalLoader } from "@/context/loader-context";
 import { CREATE_TENANT_MUTATION } from "../../tenants/ts/schema";
+import { GridLegacy as Grid } from "@mui/material";
 
 type TenantStatus = {
   active: number;
   inactive: number;
+};
+
+type ErrorsType = {
+  tenantName: string;
+  tenantStatus: string;
 };
 
 export default function TenantStatsCard() {
@@ -22,12 +28,15 @@ export default function TenantStatsCard() {
   const { showLoader, hideLoader } = useGlobalLoader();
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [tenantName, setTenantName] = useState("");
-  const [statusActive, setStatusActive] = useState(false);
-  const [statusInactive, setStatusInactive] = useState(false);
-  const [statusFlaggedToDelete, setStatusFlaggedToDelete] = useState(false);
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [isEditing, setIsEditing] = useState(false);
+  const [tenantName, setTenantName] = useState<string>("");
+  const [statusActive, setStatusActive] = useState<boolean>(false);
+  const [statusInactive, setStatusInactive] = useState<boolean>(false);
+  const [statusFlaggedToDelete, setStatusFlaggedToDelete] = useState<boolean>(false);
+  const [errors, setErrors] = useState<ErrorsType>({
+    tenantName: "",
+    tenantStatus: "",
+  });
+  const [isEditing, setIsEditing] = useState<boolean>(false);
 
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -118,11 +127,12 @@ export default function TenantStatsCard() {
       setStatusActive(false);
       setStatusInactive(false);
       setStatusFlaggedToDelete(false);
-      setErrors({});
+      setErrors({ tenantName: "", tenantStatus: "" });
       setIsEditing(false);
     } catch (error: unknown) {
       console.error("Failed to save tenant:", error);
-      const errMsg = error instanceof Error ? error.message : "Failed to save tenant";
+      const errMsg =
+        error instanceof Error ? error.message : "Failed to save tenant";
       showSnackbar(errMsg, "error");
     } finally {
       hideLoader();
@@ -156,15 +166,25 @@ export default function TenantStatsCard() {
 
         <Grid container spacing={10} justifyContent="center">
           <Grid item xs={6}>
-            <Typography align="left" variant="h4" color="#5071a5" fontWeight={700}>
+            <Typography
+              align="left"
+              variant="h4"
+              color="#5071a5"
+              fontWeight={700}
+            >
               {tenantStatus.active}
             </Typography>
             <Typography align="center" variant="body2">
               Active tenants
             </Typography>
           </Grid>
-          <Grid item xs={6}>
-            <Typography align="right" variant="h4" color="#5071a5" fontWeight={700}>
+          <Grid  item xs={6}>
+            <Typography
+              align="right"
+              variant="h4"
+              color="#5071a5"
+              fontWeight={700}
+            >
               {tenantStatus.inactive}
             </Typography>
             <Typography align="center" variant="body2">

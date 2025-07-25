@@ -48,8 +48,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   // Use Next.js hook for pathname, fallback to "/" if undefined
   const pathname = usePathname() || "/";
-
-  console.log(user);
   // Determine admin status & routes
   // Determine admin status & routes
   const isAdmin =

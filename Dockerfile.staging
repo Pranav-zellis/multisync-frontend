@@ -1,12 +1,13 @@
-# 1) Build stage: compile & bundle Next.js
+# Stage 1: Build (Debian‑slim for glibc support)
 FROM node:18-slim AS builder
-# 0) Accept the API URL at build time
+
+# Accept and expose API URL at build time
 ARG NEXT_PUBLIC_API_URL
-# 1) Export it so Next.js sees it during build
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
 WORKDIR /usr/src/app
 
-# Copy only package manifests first for Docker cache
+# Install all dependencies (dev + prod)
 COPY package*.json ./
 RUN npm ci
 
@@ -14,23 +15,19 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# ————————————————————————
-# 2) Runtime stage: slim serving image
-FROM node:18-slim AS builder
+# Stage 2: Runtime (slim prod image)
+FROM node:18-slim AS runtime
 WORKDIR /usr/src/app
 
-# Install only production deps
+# Install only production dependencies
 COPY package*.json ./
 RUN npm ci --production
 
-# Copy build output
+# Copy build artifacts from builder
 COPY --from=builder /usr/src/app/.next ./.next
 COPY --from=builder /usr/src/app/public ./public
-COPY --from=builder /usr/src/app/node_modules ./node_modules
 
-# Expose the port Next.js will listen on
+# Expose and start
 EXPOSE 3000
-
-# Use production mode
 ENV NODE_ENV=production
-CMD ["npm", "run", "start"]   # runs next start
+CMD ["npm","run","start"]

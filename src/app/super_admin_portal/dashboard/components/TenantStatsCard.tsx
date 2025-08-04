@@ -1,17 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, Typography, Grid, Stack, Button } from "@mui/material";
+import { Card, Typography, Stack, Button } from "@mui/material"; // Stable MUI Grid
 import TenantDialog from "../../tenants/components/TenantDialog";
 import GlobalSnackbar from "@/components/GlobalSnackbar";
 import { useGlobalLoader } from "@/context/loader-context";
-
 import { CREATE_TENANT_MUTATION } from "../../tenants/ts/schema";
+import { GridLegacy as Grid } from "@mui/material";
 
 type TenantStatus = {
   active: number;
   inactive: number;
+};
+
+type ErrorsType = {
+  tenantName: string;
+  tenantStatus: string;
 };
 
 export default function TenantStatsCard() {
@@ -23,12 +28,15 @@ export default function TenantStatsCard() {
   const { showLoader, hideLoader } = useGlobalLoader();
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [tenantName, setTenantName] = useState("");
-  const [statusActive, setStatusActive] = useState(false);
-  const [statusInactive, setStatusInactive] = useState(false);
-  const [statusFlaggedToDelete, setStatusFlaggedToDelete] = useState(false);
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [isEditing, setIsEditing] = useState(false);
+  const [tenantName, setTenantName] = useState<string>("");
+  const [statusActive, setStatusActive] = useState<boolean>(false);
+  const [statusInactive, setStatusInactive] = useState<boolean>(false);
+  const [statusFlaggedToDelete, setStatusFlaggedToDelete] = useState<boolean>(false);
+  const [errors, setErrors] = useState<ErrorsType>({
+    tenantName: "",
+    tenantStatus: "",
+  });
+  const [isEditing, setIsEditing] = useState<boolean>(false);
 
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -41,11 +49,10 @@ export default function TenantStatsCard() {
   });
 
   const router = useRouter();
-  const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-  // Extracted function to fetch tenant stats
-  const fetchTenantStats = () => {
-    fetch(`${API_URL}/graphql`, {
+  // Fetch tenant stats
+  const fetchTenantStats = useCallback(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -69,18 +76,18 @@ export default function TenantStatsCard() {
       .catch((err) => {
         console.error("Failed to fetch tenant stats:", err);
       });
-  };
+  }, []);
 
-  // Fetch stats on component mount
   useEffect(() => {
     fetchTenantStats();
-  }, [API_URL]);
+  }, [fetchTenantStats]);
 
+  // Create tenant
   const createTenant = async (input: {
     tenant_name: string;
     tenant_status: "active" | "inactive";
   }) => {
-    const res = await fetch(`${API_URL}/graphql`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -90,8 +97,9 @@ export default function TenantStatsCard() {
       }),
     });
     const json = await res.json();
-    if (!res.ok || json.errors)
+    if (!res.ok || json.errors) {
       throw new Error(json.errors?.[0]?.message || "Failed to create tenant");
+    }
     return json.data.createTenant;
   };
 
@@ -111,8 +119,7 @@ export default function TenantStatsCard() {
       });
       showSnackbar("Tenant created successfully", "success");
 
-      // Refresh tenant stats after creation
-      fetchTenantStats();
+      fetchTenantStats(); // Refresh stats after creating tenant
 
       // Reset and close dialog
       setDialogOpen(false);
@@ -120,12 +127,13 @@ export default function TenantStatsCard() {
       setStatusActive(false);
       setStatusInactive(false);
       setStatusFlaggedToDelete(false);
-      setErrors({});
+      setErrors({ tenantName: "", tenantStatus: "" });
       setIsEditing(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to save tenant:", error);
-      showSnackbar(error.message || "Failed to save tenant", "error");
-      hideLoader();
+      const errMsg =
+        error instanceof Error ? error.message : "Failed to save tenant";
+      showSnackbar(errMsg, "error");
     } finally {
       hideLoader();
     }
@@ -139,6 +147,7 @@ export default function TenantStatsCard() {
         severity={snackbar.severity}
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
       />
+
       <Card
         sx={{
           height: "100%",
@@ -169,7 +178,7 @@ export default function TenantStatsCard() {
               Active tenants
             </Typography>
           </Grid>
-          <Grid item xs={6}>
+          <Grid  item xs={6}>
             <Typography
               align="right"
               variant="h4"

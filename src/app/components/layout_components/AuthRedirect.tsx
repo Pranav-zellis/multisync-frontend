@@ -4,10 +4,22 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 
+interface CustomUser {
+  username: string;
+  groups: string[];
+  userPoolId?: string;
+  customAttributes: {
+    email: string;
+    email_verified?: string;
+    "custom:users_role": string;
+    sub?: string;
+  };
+}
+
 interface AuthRedirectProps {
   authLoading: boolean;
   pathname: string;
-  user: any;
+  user: CustomUser | null;
   showLoader: () => void;
   hideLoader: () => void;
   setContentReady: (ready: boolean) => void;
@@ -18,6 +30,7 @@ type UserInput = {
   email: string;
   role: string;
 };
+
 export default function AuthRedirect({
   authLoading,
   pathname,
@@ -38,7 +51,6 @@ export default function AuthRedirect({
     const isSuperAdmin = role === "Super Admin";
     const isAdminRoute = pathname.startsWith("/super_admin_portal");
 
-    // Show loader once
     if (!didStart.current) {
       showLoader();
       didStart.current = true;
@@ -49,7 +61,6 @@ export default function AuthRedirect({
       didStart.current = true;
     }
 
-    // Handle redirection
     if (!user && pathname !== "/") {
       window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`;
       return;
@@ -65,9 +76,9 @@ export default function AuthRedirect({
     async function fetchTenants() {
       try {
         const userInput: UserInput = {
-          username: user.username,
-          email: user.customAttributes.email,
-          role: user.customAttributes["custom:users_role"],
+          username: user!.username,
+          email: user!.customAttributes.email,
+          role: user!.customAttributes["custom:users_role"],
         };
 
         const res = await fetch(
@@ -92,18 +103,14 @@ export default function AuthRedirect({
         );
 
         const json = await res.json();
-
-        // Safely access the first tenant's schema
         const tenant_id = json.data?.tenantsBySchemas?.[0]?.schema;
 
         if (tenant_id) {
-          const maxAgeMs = 45 * 60 * 1000; // 45 minutes in ms
-          const maxAgeDays = maxAgeMs / (1000 * 60 * 60 * 24); // convert ms to days
-
+          const maxAgeDays = (45 * 60 * 1000) / (1000 * 60 * 60 * 24); // 45 min
           Cookies.set("tenant", tenant_id, {
             path: "/",
             sameSite: "lax",
-            expires: maxAgeDays, // expires in 0.03125 days (45 minutes)
+            expires: maxAgeDays,
           });
           router.replace("/dashboard");
         } else {
@@ -118,14 +125,13 @@ export default function AuthRedirect({
       fetchTenants();
     }
 
-    // If everything is valid, allow content after a short delay
     const timer = setTimeout(() => {
       if (!isCancelled) {
         setContentReady(true);
         hideLoader();
         didStart.current = false;
       }
-    }, 500); // optional delay to make transition feel smoother
+    }, 500);
 
     return () => {
       clearTimeout(timer);

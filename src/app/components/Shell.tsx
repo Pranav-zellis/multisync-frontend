@@ -18,8 +18,25 @@ import Header from "./layout_components/Header";
 import Sidebar from "./layout_components/Sidebar";
 import SessionDialog from "./layout_components/SessionDialog";
 
+type CustomUser = {
+  username: string;
+  groups: string[];
+  userPoolId: string;
+  customAttributes: {
+    email: string;
+    email_verified: string;
+    "custom:users_role": string;
+    sub: string;
+  };
+};
+
 export default function Shell({ children }: { children: React.ReactNode }) {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth() as {
+    user: CustomUser | null;
+    loading: boolean;
+  };
+  
+
   const { showLoader, hideLoader } = useGlobalLoader();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -31,7 +48,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
 
   // Use Next.js hook for pathname, fallback to "/" if undefined
   const pathname = usePathname() || "/";
-
+  // Determine admin status & routes
   // Determine admin status & routes
   const isAdmin =
     user?.customAttributes?.["custom:users_role"] === "Super Admin" ||

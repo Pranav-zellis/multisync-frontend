@@ -1,14 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import {
-  Card,
-  Typography,
-  Chip,
-  Box,
-  Button,
-} from "@mui/material";
-import SuperUserDialog from "../../admin_users/components/SuperUserDialog"; // Update the import path if needed
+import { useEffect, useRef, useState, useCallback } from "react";
+import { Card, Typography, Chip, Box, Button } from "@mui/material";
+import SuperUserDialog from "../../admin_users/components/SuperUserDialog";
 
 type SuperAdmin = {
   id: string;
@@ -27,7 +21,8 @@ export default function SuperAdminCard() {
   const isMounted = useRef(true);
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-  const fetchSuperAdmins = async () => {
+  // Fetch Super Admins
+  const fetchSuperAdmins = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/graphql`, {
         method: "POST",
@@ -55,7 +50,7 @@ export default function SuperAdminCard() {
     } catch (err) {
       console.error("Error fetching super admins:", err);
     }
-  };
+  }, [API_URL]);
 
   useEffect(() => {
     isMounted.current = true;
@@ -63,11 +58,11 @@ export default function SuperAdminCard() {
     return () => {
       isMounted.current = false;
     };
-  }, []);
+  }, [fetchSuperAdmins]);
 
-  const setSnackbar = (message: string, severity: "success" | "error" | "info") => {
-    // Replace this with your actual global snackbar handler
-    // console.log(`[${severity.toUpperCase()}] ${message}`);
+  // Snackbar function placeholder
+  const setSnackbar = () => {
+    // Implement global snackbar logic if needed
   };
 
   const handleCreateAdmin = () => {

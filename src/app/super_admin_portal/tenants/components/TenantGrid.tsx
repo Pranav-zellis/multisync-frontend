@@ -1,10 +1,13 @@
+// src/app/super_admin_portal/tenants/components/TenantGrid.tsx
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   DataGrid,
   GridPaginationModel,
   GridCellModesModel,
+  GridRenderCellParams,
+  GridColDef,
 } from "@mui/x-data-grid";
 import { Box } from "@mui/material";
 import TenantToolbar from "./TenantToolbar";
@@ -17,7 +20,7 @@ import {
   UPDATE_TENANT_MUTATION,
 } from "../ts/schema";
 import { useGlobalLoader } from "@/context/loader-context";
-import TenantActionsMenu from "./TenantActions";
+import TenantActionsMenu, { UpdateTenantInput } from "./TenantActions";
 import SuperUserDialog from "../../admin_users/components/SuperUserDialog";
 import { useAuth } from "@/context/auth-context";
 import { useIsMounted } from "@/hooks/useIsMounted";
@@ -66,12 +69,15 @@ export default function TenantGrid() {
 
   const { showLoader, hideLoader } = useGlobalLoader();
 
-  useEffect(() => {
-    isClient.current = true;
-    fetchTenants();
-  }, [paginationModel, search]);
+  const showSnackbar = useCallback(
+    (message: string, severity: typeof snackbar.severity) => {
+      setSnackbar({ open: true, message, severity });
+    },
+    [snackbar]
+  );
 
-  const fetchTenants = async () => {
+  // Fetch tenants data
+  const fetchTenants = useCallback(async () => {
     setGridLoading(true);
     try {
       const variables = {
@@ -100,8 +106,8 @@ export default function TenantGrid() {
         setTenants(json.data.tenants.tenants);
         setTotalCount(json.data.tenants.totalCount);
       }
-    } catch (error: any) {
-      if (isMounted.current) {
+    } catch (error: unknown) {
+      if (isMounted.current && error instanceof Error) {
         console.error("Fetch tenants error:", error);
         showSnackbar(error.message || "Failed to load tenants", "error");
       }
@@ -110,13 +116,14 @@ export default function TenantGrid() {
         setGridLoading(false);
       }
     }
-  };
+  }, [paginationModel, search, isMounted, showSnackbar]);
 
-  const updateTenant = async (input: {
-    schema: string;
-    tenant_name: string;
-    tenant_status: "active" | "inactive";
-  }) => {
+  useEffect(() => {
+    isClient.current = true;
+    fetchTenants();
+  }, [fetchTenants]);
+
+  const updateTenant = async (input: UpdateTenantInput): Promise<Tenant> => {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -131,7 +138,7 @@ export default function TenantGrid() {
     if (!res.ok || json.errors)
       throw new Error(json.errors?.[0]?.message || "Failed to update tenant");
     fetchTenants();
-    return json.data.updateTenant;
+    return json.data.updateTenant as Tenant;
   };
 
   const createTenant = async (input: {
@@ -150,14 +157,7 @@ export default function TenantGrid() {
     const json = await res.json();
     if (!res.ok || json.errors)
       throw new Error(json.errors?.[0]?.message || "Failed to create tenant");
-    return json.data.createTenant;
-  };
-
-  const showSnackbar = (
-    message: string,
-    severity: typeof snackbar.severity
-  ) => {
-    setSnackbar({ open: true, message, severity });
+    return json.data.createTenant as Tenant;
   };
 
   const handleSave = async () => {
@@ -178,7 +178,9 @@ export default function TenantGrid() {
         await updateTenant({
           schema: editingSchema,
           tenant_name: tenantName,
-          tenant_status: statusActive ? "active" : "inactive",
+          tenant_status: (statusActive
+            ? "active"
+            : "inactive") as UpdateTenantInput["tenant_status"],
         });
         showSnackbar("Tenant updated successfully", "success");
       } else {
@@ -196,9 +198,11 @@ export default function TenantGrid() {
       setErrors({ tenantName: "", tenantStatus: "" });
       setIsEditing(false);
       setEditingSchema(null);
-    } catch (error: any) {
-      console.error("Save error:", error);
-      showSnackbar(error.message || "Failed to save tenant", "error");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Save error:", error);
+        showSnackbar(error.message || "Failed to save tenant", "error");
+      }
       hideLoader();
     } finally {
       hideLoader();
@@ -215,15 +219,15 @@ export default function TenantGrid() {
       const updated = await updateTenant({
         schema: updatedRow.schema,
         tenant_name: updatedRow.tenant_name,
-        tenant_status: updatedRow.tenant_status,
+        tenant_status:
+          updatedRow.tenant_status as UpdateTenantInput["tenant_status"],
       });
       showSnackbar("Tenant updated successfully", "success");
       return updated;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Update error:", error);
       showSnackbar("Failed to update tenant", "error");
       throw error;
-      hideLoader();
     } finally {
       hideLoader();
     }
@@ -238,12 +242,12 @@ export default function TenantGrid() {
       email: "",
       phone_number: "",
     });
-    setEditingSchema(schema); // <--- stores schema (tenant_id)
+    setEditingSchema(schema);
     setTenantName(tenantName);
     setSuperUserDialogOpen(true);
   };
 
-  const columns = [
+  const columns: GridColDef<Tenant>[] = [
     {
       field: "tenant_name",
       headerName: "Tenant Name",
@@ -255,7 +259,7 @@ export default function TenantGrid() {
       headerName: "Status",
       flex: 1,
       editable: true,
-      type: "singleSelect",
+      type: "singleSelect" as const,
       valueOptions: [
         { value: "active", label: "Active" },
         { value: "inactive", label: "Inactive" },
@@ -271,7 +275,7 @@ export default function TenantGrid() {
       flex: 0.3,
       sortable: false,
       filterable: false,
-      renderCell: (params: any) => (
+      renderCell: (params: GridRenderCellParams<Tenant>) => (
         <TenantActionsMenu
           tenant={params.row}
           onCreateAdmin={handleCreateAdminClick}
@@ -324,10 +328,12 @@ export default function TenantGrid() {
           onCellModesModelChange={setCellModesModel}
           processRowUpdate={processRowUpdate}
           onProcessRowUpdateError={(error) =>
-            showSnackbar(error.message || "Update failed", "error")
+            showSnackbar(
+              error instanceof Error ? error.message : "Update failed",
+              "error"
+            )
           }
           disableRowSelectionOnClick
-          experimentalFeatures={{ newEditingApi: true }}
           autoHeight
           sx={{ minWidth: 650 }}
         />
@@ -341,8 +347,8 @@ export default function TenantGrid() {
         setStatusActive={setStatusActive}
         statusInactive={statusInactive}
         setStatusInactive={setStatusInactive}
-        statusFlaggedToDelete={statusFlaggedToDelete} // <-- Add this
-        setStatusFlaggedToDelete={setStatusFlaggedToDelete} // <-- And this
+        statusFlaggedToDelete={statusFlaggedToDelete}
+        setStatusFlaggedToDelete={setStatusFlaggedToDelete}
         errors={errors}
         setErrors={setErrors}
         onClose={() => setDialogOpen(false)}
@@ -360,8 +366,8 @@ export default function TenantGrid() {
         isEditing={false}
         usersRole="Admin"
         button_title="Admin"
-        groups={[tenantName]} // currently only tenantName
-        tenantId={editingSchema} // <-- Pass schema here
+        groups={[tenantName]}
+        tenantId={editingSchema ?? undefined}
         onClose={() => {
           setSuperUserDialogOpen(false);
           setSelectedUser(null);

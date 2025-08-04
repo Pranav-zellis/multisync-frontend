@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   DataGrid,
   GridColDef,
@@ -26,6 +26,12 @@ export interface SuperUser {
   phone_number: string;
 }
 
+type SnackbarState = {
+  open: boolean;
+  message: string;
+  severity: "success" | "error" | "info" | "warning";
+};
+
 export default function SuperUserGrid() {
   const { showLoader, hideLoader } = useGlobalLoader();
 
@@ -38,29 +44,31 @@ export default function SuperUserGrid() {
   });
   const [search, setSearch] = useState("");
 
-  const [snackbar, setSnackbar] = useState({
+  const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
     message: "",
-    severity: "success" as "success" | "error" | "info" | "warning",
+    severity: "success",
   });
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedUser, setSelectedUser] = useState<SuperUser | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-
   const [gridLoading, setGridLoading] = useState(false);
+
   const isMounted = useIsMounted();
   const isClient = useRef(false);
 
-  // Set mounted flag
-  useEffect(() => {
-    isClient.current = true;
-    fetchUsers();
-  }, [paginationModel, search]);
+  // Snackbar helper
+  const showSnackbar = useCallback(
+    (message: string, severity: SnackbarState["severity"]) => {
+      setSnackbar({ open: true, message, severity });
+    },
+    []
+  );
 
-  // Fetch users with abort support and mounted checks
-  const fetchUsers = async () => {
+  // Fetch users with mounted checks
+  const fetchUsers = useCallback(async () => {
     setGridLoading(true);
     try {
       const res = await fetch(
@@ -83,32 +91,31 @@ export default function SuperUserGrid() {
       );
 
       const json = await res.json();
-
       if (!res.ok || json.errors) throw new Error("Failed to fetch users");
 
       if (isMounted.current) {
         setUsers(json.data.getSuperAdmins.users);
         setTotal(json.data.getSuperAdmins.totalCount);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (isMounted.current) {
         console.error("Fetch users error:", error);
-        showSnackbar(error.message || "Failed to load users", "error");
+        showSnackbar(
+          error instanceof Error ? error.message : "Failed to load users",
+          "error"
+        );
       }
     } finally {
       if (isMounted.current) {
         setGridLoading(false);
       }
     }
-  };
+  }, [paginationModel, search, isMounted, showSnackbar]);
 
-  // Snackbar helper
-  const showSnackbar = (
-    message: string,
-    severity: typeof snackbar.severity
-  ) => {
-    setSnackbar({ open: true, message, severity });
-  };
+  useEffect(() => {
+    isClient.current = true;
+    fetchUsers();
+  }, [fetchUsers]);
 
   // Edit user handler
   const handleEdit = (user: SuperUser) => {
@@ -123,8 +130,7 @@ export default function SuperUserGrid() {
     setDeleteDialogOpen(true);
   };
 
-  // Confirm user deletion with mounted checks
-  // Inside handleConfirmDelete() cleanup (reset state properly):
+  // Confirm user deletion
   const handleConfirmDelete = async () => {
     try {
       if (!isMounted.current) return;
@@ -143,37 +149,35 @@ export default function SuperUserGrid() {
           body: JSON.stringify({
             query: DELETE_SUPER_ADMIN,
             variables: {
-              input: {
-                username: selectedUser.username,
-              },
+              input: { username: selectedUser.username },
             },
           }),
         }
       );
 
       const json = await res.json();
-
       if (!res.ok || json.errors) {
         throw new Error(json.errors?.[0]?.message || "Failed to delete user");
       }
 
       if (!isMounted.current) return;
-
       showSnackbar("User deleted successfully!", "success");
       setUsers((prev) => prev.filter((u) => u.id !== selectedUser.id));
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!isMounted.current) return;
-      showSnackbar(err.message, "error");
+      showSnackbar(
+        err instanceof Error ? err.message : "An unknown error occurred",
+        "error"
+      );
     } finally {
       if (!isMounted.current) return;
-
       setSelectedUser(null);
       setDeleteDialogOpen(false);
       hideLoader();
     }
   };
 
-  // DataGrid columns including actions
+  // DataGrid columns
   const columns: GridColDef[] = [
     { field: "id", headerName: "ID", width: 90 },
     { field: "username", headerName: "Username", flex: 1 },
@@ -228,12 +232,13 @@ export default function SuperUserGrid() {
           rows={users}
           columns={columns}
           rowCount={total}
+          loading={gridLoading}
           pageSizeOptions={[5, 10, 25]}
           paginationModel={paginationModel}
           onPaginationModelChange={setPaginationModel}
           paginationMode="server"
           autoHeight
-          sx={{ minWidth: 650 }} // Prevents columns squishing too much on desktop
+          sx={{ minWidth: 650 }}
         />
       </Box>
 

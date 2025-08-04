@@ -271,7 +271,8 @@ export default function TenantGrid() {
     { field: "last_modified", headerName: "Last Modified", flex: 1 },
     {
       field: "actions",
-      headerName: "",
+      type: "actions",
+      headerName: "Actions",
       flex: 0.3,
       sortable: false,
       filterable: false,

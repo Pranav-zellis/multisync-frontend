@@ -31,7 +31,8 @@ export default function TenantStatsCard() {
   const [tenantName, setTenantName] = useState<string>("");
   const [statusActive, setStatusActive] = useState<boolean>(false);
   const [statusInactive, setStatusInactive] = useState<boolean>(false);
-  const [statusFlaggedToDelete, setStatusFlaggedToDelete] = useState<boolean>(false);
+  const [statusFlaggedToDelete, setStatusFlaggedToDelete] =
+    useState<boolean>(false);
   const [errors, setErrors] = useState<ErrorsType>({
     tenantName: "",
     tenantStatus: "",
@@ -171,19 +172,22 @@ export default function TenantStatsCard() {
               variant="h4"
               color="#5071a5"
               fontWeight={700}
+              sx={{ pt: 1, pb: 0, px: 2 }}
             >
               {tenantStatus.active}
             </Typography>
+
             <Typography align="center" variant="body2">
               Active tenants
             </Typography>
           </Grid>
-          <Grid  item xs={6}>
+          <Grid item xs={6}>
             <Typography
               align="right"
               variant="h4"
               color="#5071a5"
               fontWeight={700}
+              sx={{ pt: 1, pb: 0, px: 1 }}
             >
               {tenantStatus.inactive}
             </Typography>

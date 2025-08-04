@@ -27,9 +27,7 @@ export default function TenantCard({ group, status, onClick }: Props) {
       }}
       sx={{
         width: "100%",
-        height: "100%", // Make all cards the same height
-        maxWidth: 300,
-        minHeight: 140, // Ensures uniform height
+        height: "100%",
         borderColor: isDisabled ? "#BDBDBD" : "#E0E0E0",
         cursor: isDisabled ? "not-allowed" : "pointer",
         pointerEvents: isDisabled ? "none" : "auto",
@@ -43,6 +41,9 @@ export default function TenantCard({ group, status, onClick }: Props) {
             ? undefined
             : "0 6px 15px rgba(255, 152, 0, 0.45)",
         },
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
       }}
     >
       <CardContent
@@ -64,6 +65,7 @@ export default function TenantCard({ group, status, onClick }: Props) {
             fontSize: { xs: "1.1rem", sm: "1.25rem" },
             wordBreak: "break-word",
             width: "100%",
+            pb: 0.5,
           }}
           title={group}
         >

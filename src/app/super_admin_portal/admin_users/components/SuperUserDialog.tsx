@@ -51,6 +51,16 @@ interface Props {
 
 const supportedCountryCodes = ["+91", "+1", "+44", "+61", "+971"];
 
+const defaultFormValues = {
+  username: "",
+  first_name: "",
+  last_name: "",
+  email: "",
+  phone: "",
+  role: "",
+  countryCode: "+91",
+};
+
 export default function SuperUserDialog({
   open,
   onClose,
@@ -69,6 +79,10 @@ export default function SuperUserDialog({
 
   const [error] = useState<string | null>(null);
   const { showLoader, hideLoader } = useGlobalLoader();
+  const [isUserExists, setIsUserExists] = useState(false);
+
+  // To force remount SuperUsersForm on clear, reset this key
+  const [formKey, setFormKey] = useState(0);
 
   useEffect(() => {
     if (isEditing && user) {
@@ -154,14 +168,16 @@ export default function SuperUserDialog({
       phone_number: fullPhone,
       users_role: usersRole === "Super Admin" ? usersRole : form.role,
       groups,
-      tenant_ids: tenantId ? [tenantId] : [], // <-- Pass tenantId here
+      tenant_ids: tenantId ? [tenantId] : [],
     };
 
     try {
       showLoader();
-      if (isEditing) await updateUser(input);
-      else await createUser(input);
-
+      if (isEditing || isUserExists) {
+        await updateUser(input);
+      } else {
+        await createUser(input);
+      }
       setSnackbar({
         open: true,
         message: isEditing
@@ -173,10 +189,15 @@ export default function SuperUserDialog({
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
       setSnackbar({ open: true, message, severity: "error" });
-      hideLoader();
     } finally {
       hideLoader();
     }
+  };
+
+  const handleClear = () => {
+    setForm(defaultFormValues);
+    setIsUserExists(false); // reset on clear
+    setFormKey((k) => k + 1);
   };
 
   return (
@@ -184,14 +205,20 @@ export default function SuperUserDialog({
       <DialogTitle>{title}</DialogTitle>
       <DialogContent dividers>
         <SuperUsersForm
+          key={formKey}
           form={form}
           setForm={setForm}
           isEditMode={isEditing}
           error={error}
           showRole={usersRole === "Super Admin"}
+          setIsUserExists={setIsUserExists}
+          tenant_name={groups}
         />
       </DialogContent>
       <DialogActions>
+        <Button variant="outlined" onClick={handleClear}>
+          Clear
+        </Button>
         <Button
           variant="contained"
           onClick={handleSubmit}
@@ -200,7 +227,8 @@ export default function SuperUserDialog({
             !form.first_name ||
             !form.email ||
             (!!form.phone && form.phone.length < 6) ||
-            (!form.role && form.role == '')
+            !form.role ||
+            form.role === ""
           }
         >
           {isEditing ? "Update" : "Create"} {button_title}

@@ -20,13 +20,14 @@ interface UserType {
   phone_number?: string;
 }
 
-interface FormType {
+export interface FormType {
   username?: string;
+  email?: string;
   first_name?: string;
   last_name?: string;
-  email?: string;
   phone?: string;
   countryCode: string;
+  role?: string; // optional, can be undefined
 }
 
 interface Props {
@@ -65,20 +66,25 @@ export default function SuperUserDialog({
   setSnackbar,
 }: Props) {
   const [form, setForm] = useState<FormType>({ countryCode: "+91" });
+
   const [error] = useState<string | null>(null);
   const { showLoader, hideLoader } = useGlobalLoader();
 
   useEffect(() => {
     if (isEditing && user) {
-      let phone = user.phone_number || "";
-      let code = "+91";
-      for (const c of supportedCountryCodes) {
-        if (phone.startsWith(c)) {
-          code = c;
-          phone = phone.slice(c.length);
-          break;
+      let phone = "";
+      let code = "+91"; // default
+
+      if (user.phone_number) {
+        for (const prefix of supportedCountryCodes) {
+          if (user.phone_number.startsWith(prefix)) {
+            code = prefix;
+            phone = user.phone_number.slice(prefix.length);
+            break;
+          }
         }
       }
+
       setForm({
         username: user.username,
         first_name: user.first_name,
@@ -86,11 +92,15 @@ export default function SuperUserDialog({
         email: user.email,
         phone,
         countryCode: code,
+        role: usersRole !== "Super Admin" ? usersRole : undefined,
       });
     } else {
-      setForm({ countryCode: "+91" });
+      setForm({
+        countryCode: "+91",
+        role: usersRole !== "Super Admin" ? usersRole : undefined,
+      });
     }
-  }, [open, isEditing, user]);
+  }, [open, isEditing, user, usersRole]);
 
   const createUser = async (input: Record<string, unknown>) => {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`, {
@@ -142,7 +152,7 @@ export default function SuperUserDialog({
       last_name: form.last_name,
       inviter_name: inviterName,
       phone_number: fullPhone,
-      users_role: usersRole,
+      users_role: usersRole === "Super Admin" ? usersRole : form.role,
       groups,
       tenant_ids: tenantId ? [tenantId] : [], // <-- Pass tenantId here
     };
@@ -178,6 +188,7 @@ export default function SuperUserDialog({
           setForm={setForm}
           isEditMode={isEditing}
           error={error}
+          showRole={usersRole === "Super Admin"}
         />
       </DialogContent>
       <DialogActions>
@@ -188,7 +199,8 @@ export default function SuperUserDialog({
             !form.username ||
             !form.first_name ||
             !form.email ||
-            (!!form.phone && form.phone.length < 6)
+            (!!form.phone && form.phone.length < 6) ||
+            (!form.role && form.role == '')
           }
         >
           {isEditing ? "Update" : "Create"} {button_title}

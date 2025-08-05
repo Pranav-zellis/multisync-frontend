@@ -182,8 +182,8 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <MenuItem onClick={() => handleActionClick("tenantEdit")}>Edit</MenuItem>
+        <MenuItem onClick={() => handleActionClick("createAdmin")}>Create New User</MenuItem>
         <MenuItem onClick={() => handleActionClick("tenantDelete")}>Delete</MenuItem>
-        <MenuItem onClick={() => handleActionClick("createAdmin")}>Create New Admin User</MenuItem>
       </Menu>
 
       {/* Edit Dialog */}

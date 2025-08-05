@@ -362,11 +362,11 @@ export default function TenantGrid() {
         user={selectedUser}
         inviterName={user?.username || ""}
         title={
-          isEditing ? "Edit Admin User" : `Create Admin for \"${tenantName}\"`
+          isEditing ? "Edit User" : `Create User for \"${tenantName}\"`
         }
         isEditing={false}
-        usersRole="Admin"
-        button_title="Admin"
+        usersRole=""
+        button_title="User"
         groups={[tenantName]}
         tenantId={editingSchema ?? undefined}
         onClose={() => {

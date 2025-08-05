@@ -16,6 +16,7 @@ import SuperUserToolbar from "./SuperUserToolbar";
 import { useGlobalLoader } from "@/context/loader-context";
 import { DELETE_SUPER_ADMIN, GET_SUPER_ADMIN } from "../ts/schema";
 import { useIsMounted } from "@/hooks/useIsMounted";
+import { useAuth } from "@/context/auth-context";
 
 export interface SuperUser {
   id: string;
@@ -35,6 +36,7 @@ type SnackbarState = {
 export default function SuperUserGrid() {
   const { showLoader, hideLoader } = useGlobalLoader();
 
+  const { user } = useAuth();
   // State
   const [users, setUsers] = useState<SuperUser[]>([]);
   const [total, setTotal] = useState(0);
@@ -53,6 +55,7 @@ export default function SuperUserGrid() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedUser, setSelectedUser] = useState<SuperUser | null>(null);
+
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [gridLoading, setGridLoading] = useState(false);
 
@@ -245,7 +248,7 @@ export default function SuperUserGrid() {
       <SuperUserDialog
         open={dialogOpen}
         user={selectedUser}
-        inviterName={selectedUser?.username || ""}
+        inviterName={user?.username || ""}
         isEditing={isEditing}
         usersRole="Super Admin"
         groups={["*"]}

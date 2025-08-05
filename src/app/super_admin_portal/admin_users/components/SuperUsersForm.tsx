@@ -1,10 +1,24 @@
 "use client";
 
 import React, { Dispatch, SetStateAction } from "react";
-import { TextField, Box, Select, MenuItem, Alert } from "@mui/material";
+import {
+  TextField,
+  Box,
+  Select,
+  MenuItem,
+  Alert,
+  Checkbox,
+  FormControlLabel,
+  FormControl,
+  FormLabel,
+  FormGroup,
+  FormHelperText,
+} from "@mui/material";
 
+// Supported country codes
 export const supportedCountryCodes = ["+91", "+1", "+44", "+61", "+971"];
 
+// Validators
 export const isValidUsername = (username: string) =>
   username.length <= 50 && /^[a-zA-Z0-9_]+$/.test(username);
 
@@ -16,6 +30,7 @@ export const isValidEmail = (email: string) =>
 
 export const isPhoneValid = (phone: string) => /^[0-9]{6,14}$/.test(phone);
 
+// Form type definition
 export interface FormType {
   username?: string;
   email?: string;
@@ -23,13 +38,16 @@ export interface FormType {
   last_name?: string;
   phone?: string;
   countryCode: string;
+  role?: string;
 }
 
+// Props
 interface Props {
   form: FormType;
   setForm: Dispatch<SetStateAction<FormType>>;
   error?: string | null;
   isEditMode?: boolean;
+  showRole: boolean; // true = hide role picker (super admin), false = show checkboxes
 }
 
 export default function SuperUsersForm({
@@ -37,7 +55,10 @@ export default function SuperUsersForm({
   setForm,
   error,
   isEditMode = false,
+  showRole,
 }: Props) {
+  const showRoleError = !showRole && !form.role;
+
   return (
     <>
       {error && <Alert severity="error">{error}</Alert>}
@@ -47,7 +68,9 @@ export default function SuperUsersForm({
         required
         fullWidth
         value={form.username || ""}
-        onChange={(e) => setForm((prev) => ({ ...prev, username: e.target.value }))}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, username: e.target.value }))
+        }
         error={!!form.username && !isValidUsername(form.username)}
         helperText={
           form.username && !isValidUsername(form.username)
@@ -55,6 +78,7 @@ export default function SuperUsersForm({
             : ""
         }
         disabled={isEditMode}
+        sx={{ mt: 1 }}
       />
 
       <TextField
@@ -63,7 +87,9 @@ export default function SuperUsersForm({
         required
         fullWidth
         value={form.email || ""}
-        onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, email: e.target.value }))
+        }
         error={!!form.email && !isValidEmail(form.email)}
         helperText={
           form.email && !isValidEmail(form.email) ? "Enter a valid email" : ""
@@ -133,6 +159,48 @@ export default function SuperUsersForm({
           }
         />
       </Box>
+
+      {/* Show checkbox roles if NOT super admin */}
+      {!showRole && (
+        <Box display="flex" gap={1} sx={{ my: 2 }}>
+          <FormControl component="fieldset">
+            <FormLabel component="legend" sx={{ mb: 1 }}>
+              Select Role
+            </FormLabel>
+
+            <FormGroup row>
+              <FormControlLabel
+                label="Admin User"
+                control={
+                  <Checkbox
+                    checked={form.role === "Admin"}
+                    onChange={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        role: prev.role === "Admin" ? "" : "Admin",
+                      }))
+                    }
+                  />
+                }
+              />
+              <FormControlLabel
+                label="User"
+                control={
+                  <Checkbox
+                    checked={form.role === "User"}
+                    onChange={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        role: prev.role === "User" ? "" : "User",
+                      }))
+                    }
+                  />
+                }
+              />
+            </FormGroup>
+          </FormControl>
+        </Box>
+      )}
     </>
   );
 }

@@ -41,7 +41,7 @@ export default function UserSuggestionPrompt({
         p: 2,
         mt: 2,
         my: 2,
-        backgroundColor: "#ededed",
+        backgroundColor: "rgb(255, 244, 229)",
         border: `1px solid rgba(0, 0, 0, 0.54)`,
       }}
     >

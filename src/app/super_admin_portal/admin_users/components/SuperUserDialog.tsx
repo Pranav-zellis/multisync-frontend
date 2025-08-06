@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  IconButton,
 } from "@mui/material";
 import { useState, useEffect } from "react";
 import { UPDATE_SUPER_ADMIN } from "../ts/schema";
@@ -202,7 +203,26 @@ export default function SuperUserDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>{title}</DialogTitle>
+      <DialogTitle
+        sx={{
+          m: 0,
+          p: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
+        {title}
+        <IconButton
+          aria-label="close"
+          onClick={onClose}
+          sx={{
+            color: (theme) => theme.palette.grey[500],
+          }}
+        >
+          <span className="material-symbols-outlined">close_small</span>
+        </IconButton>
+      </DialogTitle>
       <DialogContent dividers>
         <SuperUsersForm
           key={formKey}
@@ -216,9 +236,11 @@ export default function SuperUserDialog({
         />
       </DialogContent>
       <DialogActions>
-        <Button variant="outlined" onClick={handleClear}>
-          Clear
-        </Button>
+        {!isEditing && (
+          <Button variant="outlined" onClick={handleClear}>
+            Clear
+          </Button>
+        )}
         <Button
           variant="contained"
           onClick={handleSubmit}
@@ -227,8 +249,7 @@ export default function SuperUserDialog({
             !form.first_name ||
             !form.email ||
             (!!form.phone && form.phone.length < 6) ||
-            !form.role ||
-            form.role === ""
+            (!isEditing && (!form.role || form.role === ""))
           }
         >
           {isEditing ? "Update" : "Create"} {button_title}

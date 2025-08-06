@@ -13,19 +13,17 @@ import {
   FormLabel,
   FormGroup,
   Typography,
-  Paper,
-  Button,
-  Stack
 } from "@mui/material";
+import UserSuggestionPrompt from "./UserSuggestionPrompt";
 
-interface UserSuggestion {
+export interface UserSuggestion {
   username: string;
   first_name: string;
   last_name: string;
   email: string;
   phone_number: string;
-  user_type: string;
-  tenant_name: string;
+  user_type: string; // e.g., "Super Admin", "Tenant Admin", "User"
+  tenant_names: string; // Comma-separated tenant names or a string summary
 }
 
 interface FormType {
@@ -36,6 +34,7 @@ interface FormType {
   phone?: string;
   countryCode: string;
   role?: string;
+  tenant?: string;
 }
 
 interface Props {
@@ -67,7 +66,6 @@ export default function SuperUsersForm({
   error,
   isEditMode = false,
   showRole,
-  tenant_name,
   setIsUserExists,
 }: Props) {
   const [userSuggestions, setUserSuggestions] = useState<UserSuggestion[]>([]);
@@ -152,11 +150,11 @@ export default function SuperUsersForm({
   }
 
   const handleUsernameBlur = () => {
-    fetchUserSuggestions(form.username, form.email, "username");
+    fetchUserSuggestions(form.username ?? undefined, undefined, "username");
   };
 
   const handleEmailBlur = () => {
-    fetchUserSuggestions(form.username, form.email, "email");
+    fetchUserSuggestions(undefined, form.email ?? undefined, "email");
   };
 
   const handleAcceptSuggestion = () => {
@@ -187,84 +185,13 @@ export default function SuperUsersForm({
   const handleRejectSuggestion = () => {
     setForm((prev) => ({
       ...prev,
-      email: form.email && !form.username ? form.email : "",
-      first_name: "",
-      last_name: "",
-      phone: "",
-      countryCode: "+91",
-      role: "",
+      ...(suggestionSourceField === "email" && { email: "" }),
+      ...(suggestionSourceField === "username" && { username: "" }),
     }));
 
     setUserSuggestions([]);
     setShowSuggestionPrompt(false);
   };
-
-  const SuggestionPrompt = () =>
-    showSuggestionPrompt &&
-    userSuggestions.length > 0 && (
-      <Paper
-      
-        sx={{
-          p: 2,
-          mt: 2,
-          my: 2,
-          backgroundColor: (theme) => "#ededed",
-          border: (theme) => `1px solid rgba(0, 0, 0, 0.54)`,
-        }}
-      >
-        <Typography variant="subtitle1" gutterBottom>
-          A user with{" "}
-          {suggestionSourceField === "email"
-            ? `email ID ${userSuggestions[0].email}`
-            : `Username ${userSuggestions[0].username}`}{" "}
-          already exists in our system under the following tenant(s) –{" "}
-          {userSuggestions[0].tenant_names}. Please click "YES" if you wish to
-          add the existing user as an admin/user to the Tenant {tenant_name}.
-        </Typography>
-
-        <Typography variant="body2" sx={{ mb: 1 }}>
-          <b>
-            {userSuggestions[0].first_name} {userSuggestions[0].last_name}
-          </b>{" "}
-          – {userSuggestions[0].email} – {userSuggestions[0].phone_number}
-        </Typography>
-
-        {userSuggestions[0].user_type === "Super Admin" && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            This user is a Super Admin and cannot be added to a tenant.
-          </Alert>
-        )}
-
-        <Stack direction="row" spacing={2}>
-          {userSuggestions[0].user_type !== "Super Admin" ? (
-            <>
-              <Button
-                variant="contained"
-                color="success"
-                onClick={handleAcceptSuggestion}
-              >
-                Yes
-              </Button>
-              <Button
-                variant="contained"
-                color="error"
-                onClick={handleRejectSuggestion}
-              >
-                No
-              </Button>
-            </>
-          ) : (
-            <Button
-              variant="contained"
-              color="error"
-              onClick={handleRejectSuggestion}
-            >
-              Dismiss
-            </Button>
-          )}
-        </Stack>
-      </Paper>
-    );
 
   return (
     <>
@@ -292,8 +219,22 @@ export default function SuperUsersForm({
 
       {loading && <Typography variant="body2">Checking user...</Typography>}
 
+      <Box sx={{ mt: 1 }}>
+        {showSuggestionPrompt &&
+          suggestionSourceField === "username" &&
+          userSuggestions.length > 0 && (
+            <UserSuggestionPrompt
+              user={userSuggestions[0]}
+              tenant_name={[form.tenant ?? ""]}
+              source={suggestionSourceField}
+              onAccept={handleAcceptSuggestion}
+              onReject={handleRejectSuggestion}
+            />
+          )}
+      </Box>
+
       {/* Suggestion Prompt */}
-      {suggestionSourceField === "username" && <SuggestionPrompt />}
+      {/* {suggestionSourceField === "username" && <SuggestionPrompt />} */}
       {/* Email Field */}
       <TextField
         label="Email"
@@ -313,10 +254,24 @@ export default function SuperUsersForm({
         sx={{ my: 2 }}
       />
 
-      {suggestionSourceField === "email" && <SuggestionPrompt />}
+      <Box sx={{ mt: 1 }}>
+        {showSuggestionPrompt &&
+          suggestionSourceField === "email" &&
+          userSuggestions.length > 0 && (
+            <UserSuggestionPrompt
+              user={userSuggestions[0]}
+              tenant_name={[form.tenant ?? ""]}
+              source={suggestionSourceField}
+              onAccept={handleAcceptSuggestion}
+              onReject={handleRejectSuggestion}
+            />
+          )}
+      </Box>
+
+      {/* {suggestionSourceField === "email" && <SuggestionPrompt />} */}
 
       {/* Name Fields */}
-      <Box display="flex" gap={2} >
+      <Box display="flex" gap={2}>
         <TextField
           label="First Name"
           required
@@ -331,7 +286,7 @@ export default function SuperUsersForm({
               ? "Only letters, max 50 chars"
               : ""
           }
-          disabled={isEditMode || isUserExists}
+          disabled={isUserExists}
         />
         <TextField
           label="Last Name"
@@ -346,7 +301,7 @@ export default function SuperUsersForm({
               ? "Only letters, max 50 chars"
               : ""
           }
-          disabled={isEditMode || isUserExists}
+          disabled={isUserExists}
         />
       </Box>
 
@@ -358,7 +313,7 @@ export default function SuperUsersForm({
             setForm((prev) => ({ ...prev, countryCode: e.target.value }))
           }
           size="small"
-          disabled={isEditMode || isUserExists}
+          disabled={isUserExists}
         >
           {supportedCountryCodes.map((code) => (
             <MenuItem key={code} value={code}>
@@ -379,7 +334,7 @@ export default function SuperUsersForm({
               ? "Enter 6–14 digits only"
               : ""
           }
-          disabled={isEditMode || isUserExists}
+          disabled={isUserExists}
         />
       </Box>
 

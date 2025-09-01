@@ -42,7 +42,6 @@ export default function UserSuggestionPrompt({
         mt: 2,
         my: 2,
         backgroundColor: "rgb(255, 244, 229)",
-        border: `1px solid rgba(0, 0, 0, 0.54)`,
       }}
     >
       {!isSuperAdmin && (

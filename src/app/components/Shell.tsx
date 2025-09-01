@@ -35,7 +35,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     user: CustomUser | null;
     loading: boolean;
   };
-  
 
   const { showLoader, hideLoader } = useGlobalLoader();
 
@@ -75,12 +74,24 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             icon: "groups",
           },
           {
+            label: "User Management",
+            href: "/super_admin_portal/user_management",
+            icon: "groups",
+          },
+          {
             label: "Settings",
             href: "/super_admin_portal/settings",
             icon: "settings",
           },
         ]
-      : [{ label: "Dashboard", href: "/dashboard", icon: "dashboard" }];
+      : [
+          { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
+          {
+            label: "User Management",
+            href: "/user_management",
+            icon: "groups",
+          },
+        ];
 
   const theme = createTheme({
     palette: { mode: "light", primary: { main: "#FF982E" } },

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Card, Typography, Chip, Box, Button } from "@mui/material";
-import SuperUserDialog from "../../admin_users/components/SuperUserDialog";
+import SuperUserDialog from "../../../components/SuperUserDialog";
 
 type SuperAdmin = {
   id: string;

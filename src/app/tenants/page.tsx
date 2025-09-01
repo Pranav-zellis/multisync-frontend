@@ -90,11 +90,12 @@ export default function AccountsPage() {
     fetchTenants();
   }, [user, loading, hasFetched, router, showLoader, hideLoader]);
 
-  const handleAccountClick = (schema: string, status: string) => {
+  const handleAccountClick = (schema: string, status: string,name: string) => {
     if (status === "inactive" || status === "flagged_to_delete") return;
 
     showLoader();
     Cookies.set("tenant", schema, { path: "/", sameSite: "Lax" });
+    Cookies.set("tenant_name", name, { path: "/", sameSite: "Lax" });
     router.push("/dashboard");
 
     setTimeout(() => {
@@ -118,7 +119,7 @@ export default function AccountsPage() {
                 <TenantCard
                   group={tenant.tenant_name}
                   status={tenant.tenant_status}
-                  onClick={() => handleAccountClick(tenant.schema, tenant.tenant_status)}
+                  onClick={() => handleAccountClick(tenant.schema, tenant.tenant_status,tenant.tenant_name)}
                 />
               </Box>
             </Grid>

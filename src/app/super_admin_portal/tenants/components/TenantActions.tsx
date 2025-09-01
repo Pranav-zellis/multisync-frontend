@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Menu,
   MenuItem,
@@ -15,6 +15,9 @@ import {
   TextField,
 } from "@mui/material";
 import TenantDialog from "./TenantDialog";
+import SuperUserDialog from "../../../components/SuperUserDialog";
+import { useAuth } from "@/context/auth-context";
+import { User } from "@/types/User";
 
 interface Tenant {
   schema: string;
@@ -45,14 +48,20 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
   hideLoader,
   showSnackbar,
 }) => {
+  const { user } = useAuth();
+  const [superUserDialogOpen, setSuperUserDialogOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
 
+  // Dialog & Editing
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
+  // Delete confirmation dialog
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [confirmInput, setConfirmInput] = useState("");
 
+  // Tenant edit form states
   const [currentTenantName, setCurrentTenantName] = useState(
     tenant.tenant_name
   );
@@ -65,18 +74,154 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
   const [statusFlaggedToDelete, setStatusFlaggedToDelete] = useState(
     tenant.tenant_status === "flagged_to_delete"
   );
+  const [editingSchema, setEditingSchema] = useState<string | null>(null);
+
+  const [activeTenants, setActiveTenants] = useState<
+    { tenant_name: string; schema: string }[]
+  >([]);
+
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "info" | "warning",
+  });
 
   const [errors, setErrors] = useState({ tenantName: "", tenantStatus: "" });
 
-  const open = Boolean(anchorEl);
+  // User data & paging moved here:
+  const [users, setUsers] = useState<User[]>([]);
+  const [page, setPage] = useState(0); // 0-based paging at client side
+  const [pageSize, setPageSize] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  // Menu handlers
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
+  // Fetch users API call
+  const fetchUsers = async (
+    tenantSchema: string,
+    pageNum: number,
+    limit: number
+  ) => {
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            query: `
+            query GetPaginatedUsers($tenantSchemas: [String!]!, $page: Int, $limit: Int) {
+              findUsersByTenantSchemasPaginated(
+                tenantSchemas: $tenantSchemas,
+                page: $page,
+                limit: $limit
+              ) {
+                users {
+                  id
+                  username
+                  first_name
+                  last_name
+                  email
+                  phone_number
+                  user_type
+                  tenant_names
+                }
+                totalCount
+                currentPage
+                totalPages
+              }
+            }
+          `,
+            variables: {
+              tenantSchemas: [tenantSchema],
+              page: pageNum + 1, // backend expects 1-based page
+              limit,
+            },
+          }),
+        }
+      );
+
+      const result = await response.json();
+      const data = result.data.findUsersByTenantSchemasPaginated;
+
+      const formattedUsers = data.users.map((u: any, index: number) => ({
+        id: index + pageNum * limit,
+        ...u,
+      }));
+
+      setUsers(formattedUsers);
+      setTotalCount(data.totalCount);
+    } catch (err) {
+      console.error("Failed to fetch users:", err);
+      showSnackbar("Failed to load users", "error");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    async function fetchActiveTenants() {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              query: `
+            query {
+              tenants(skip: 0, take: 100) {
+                activeTenants {
+                  tenant_name
+                  schema
+                }
+              }
+            }
+          `,
+            }),
+          }
+        );
+        const json = await res.json();
+        setActiveTenants(json.data.tenants.activeTenants || []);
+      } catch (error) {
+        console.error("Failed to fetch active tenants:", error);
+      }
+    }
+    fetchActiveTenants();
+  }, []);
+
+  // Refetch users when page or pageSize change, only if dialog is open and editing
+  useEffect(() => {
+    if (dialogOpen && isEditing) {
+      fetchUsers(tenant.schema, page, pageSize);
+    }
+  }, [page, pageSize, dialogOpen, isEditing]);
+
+  // Paging handlers
+  const handlePageChange = (newPage: number) => setPage(newPage);
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setPage(0); // Reset to first page on size change
+  };
+
+  // Menu event handlers
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) =>
+    setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
 
-  // Edit dialog handlers
+  const handleUserEdit = (user: User) => {
+    setSelectedUser(user);
+    setEditingSchema(tenant.schema);
+    setCurrentTenantName(tenant.tenant_name);
+    setSuperUserDialogOpen(true);
+  };
+
+  const handleUserDelete = (user: User) => {
+    console.log(user);
+  };
+
+  // Tenant edit dialog open with reset and immediate fetch
   const handleEdit = () => {
     setIsEditing(true);
     setCurrentTenantName(tenant.tenant_name);
@@ -84,7 +229,9 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
     setStatusInactive(tenant.tenant_status === "inactive");
     setStatusFlaggedToDelete(tenant.tenant_status === "flagged_to_delete");
     setErrors({ tenantName: "", tenantStatus: "" });
+    setPage(0); // reset paging
     setDialogOpen(true);
+    fetchUsers(tenant.schema, 0, pageSize);
     handleMenuClose();
   };
 
@@ -92,6 +239,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
     setDialogOpen(false);
     setIsEditing(false);
     setErrors({ tenantName: "", tenantStatus: "" });
+    setUsers([]); // Optional: clear user list on close
   };
 
   const handleDialogSave = async () => {
@@ -128,7 +276,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
     }
   };
 
-  // Delete confirmation handlers
+  // Confirm delete
   const confirmTenantDelete = async () => {
     try {
       showLoader();
@@ -148,13 +296,20 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
     }
   };
 
+  const handleCreateUser = () => {
+    setSelectedUser(null); // Clear if any user is selected
+    setEditingSchema(tenant.schema);
+    setCurrentTenantName(tenant.tenant_name);
+    setSuperUserDialogOpen(true);
+  };
+
   const handleDelete = () => {
     setConfirmDeleteOpen(true);
     setConfirmInput("");
     handleMenuClose();
   };
 
-  // Menu action handler
+  // Menu action dispatcher
   const handleActionClick = (action: string) => {
     switch (action) {
       case "tenantEdit":
@@ -226,6 +381,25 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
         onClose={handleDialogClose}
         onSave={handleDialogSave}
         isEditing={isEditing}
+        users={users.map((u) => ({
+          ...u,
+          tenant_names: Array.isArray(u.tenant_names)
+            ? u.tenant_names
+            : u.tenant_names
+            ? [u.tenant_names]
+            : [],
+          real_id: u.id ?? u.id,
+        }))}
+        totalCount={totalCount}
+        loading={loading}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
+        onUserEdit={handleUserEdit}
+        onUserDelete={handleUserDelete}
+        onCreateUser={handleCreateUser}
+        activeTenants={activeTenants}
       />
 
       {/* Confirm Delete Dialog */}
@@ -237,9 +411,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
         }}
         maxWidth="xs"
         fullWidth
-        PaperProps={{
-          sx: { width: 500, maxWidth: "100%" },
-        }}
+        PaperProps={{ sx: { width: 500, maxWidth: "100%" } }}
       >
         <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
@@ -278,6 +450,32 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
+
+      <SuperUserDialog
+        open={superUserDialogOpen}
+        user={selectedUser}
+        inviterName={user?.username || ""}
+        title={
+          selectedUser
+            ? `Edit User for \"${currentTenantName}\"`
+            : `Create User for \"${currentTenantName}\"`
+        }
+        isEditing={Boolean(selectedUser)} // true if editing existing user
+        usersRole={selectedUser?.user_type}
+        button_title="User"
+        groups={[currentTenantName]}
+        tenantId={editingSchema ?? undefined}
+        onClose={() => {
+          setSuperUserDialogOpen(false);
+          setSelectedUser(null);
+        }}
+        onSuccess={() => {
+          setSuperUserDialogOpen(false);
+          setSelectedUser(null);
+          fetchUsers(tenant.schema, page, pageSize);
+        }}
+        setSnackbar={setSnackbar}
+      />
     </>
   );
 };

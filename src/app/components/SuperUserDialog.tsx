@@ -9,9 +9,9 @@ import {
   IconButton,
 } from "@mui/material";
 import { useState, useEffect } from "react";
-import { UPDATE_SUPER_ADMIN } from "../ts/schema";
+import { UPDATE_SUPER_ADMIN } from "../super_admin_portal/admin_users/ts/schema";
 import { useGlobalLoader } from "@/context/loader-context";
-import SuperUsersForm from "./SuperUsersForm";
+import SuperUsersForm from "../super_admin_portal/admin_users/components/SuperUsersForm";
 
 interface UserType {
   username: string;
@@ -28,7 +28,7 @@ export interface FormType {
   last_name?: string;
   phone?: string;
   countryCode: string;
-  role?: string; // optional, can be undefined
+  role?: string;
 }
 
 interface Props {
@@ -37,9 +37,9 @@ interface Props {
   user: UserType | null;
   isEditing: boolean;
   inviterName: string;
-  usersRole: string;
-  groups: string[];
-  tenantId?: string; // <-- tenantId is optional but required for new users
+  usersRole?: string;
+  groups?: string[];
+  tenantId?: string;
   title: string;
   button_title: string;
   onSuccess: () => void;
@@ -77,18 +77,15 @@ export default function SuperUserDialog({
   setSnackbar,
 }: Props) {
   const [form, setForm] = useState<FormType>({ countryCode: "+91" });
-
   const [error] = useState<string | null>(null);
   const { showLoader, hideLoader } = useGlobalLoader();
   const [isUserExists, setIsUserExists] = useState(false);
-
-  // To force remount SuperUsersForm on clear, reset this key
   const [formKey, setFormKey] = useState(0);
 
   useEffect(() => {
     if (isEditing && user) {
       let phone = "";
-      let code = "+91"; // default
+      let code = "+91";
 
       if (user.phone_number) {
         for (const prefix of supportedCountryCodes) {
@@ -197,7 +194,7 @@ export default function SuperUserDialog({
 
   const handleClear = () => {
     setForm(defaultFormValues);
-    setIsUserExists(false); // reset on clear
+    setIsUserExists(false);
     setFormKey((k) => k + 1);
   };
 
@@ -232,7 +229,7 @@ export default function SuperUserDialog({
           error={error}
           showRole={usersRole === "Super Admin"}
           setIsUserExists={setIsUserExists}
-          tenant_name={groups}
+          tenant_name={groups ?? []} // ✅ ensures always string[]
         />
       </DialogContent>
       <DialogActions>

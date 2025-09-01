@@ -10,7 +10,7 @@ import {
 import { Box } from "@mui/material";
 
 import GlobalSnackbar from "@/components/GlobalSnackbar";
-import SuperUserDialog from "./SuperUserDialog";
+import SuperUserDialog from "../../../components/SuperUserDialog";
 import SuperUserDeleteDialog from "./SuperUserDeleteDialog";
 import SuperUserToolbar from "./SuperUserToolbar";
 import { useGlobalLoader } from "@/context/loader-context";

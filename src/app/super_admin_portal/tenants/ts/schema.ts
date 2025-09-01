@@ -11,6 +11,9 @@ export const GET_TENANTS_QUERY = `
         last_modified
       }
       totalCount
+      activeTenants {
+        tenant_name
+      }
     }
   }
 `;

@@ -1,4 +1,4 @@
-# Stage 1: Build (Debian‑slim for glibc support)
+# Stage 1: Build (Debian-slim for glibc support)
 FROM node:20-slim AS builder
 
 # Accept and expose API URL at build time
@@ -9,7 +9,9 @@ WORKDIR /usr/src/app
 
 # Install all dependencies (dev + prod)
 COPY package*.json ./
-RUN npm ci
+
+# Use npm install instead of npm ci to avoid lock file issues
+RUN npm install
 
 # Copy source & build
 COPY . .
@@ -21,13 +23,17 @@ WORKDIR /usr/src/app
 
 # Install only production dependencies
 COPY package*.json ./
-RUN npm ci --production
+
+# Install prod dependencies only, skipping dev dependencies
+RUN npm install --omit=dev
 
 # Copy build artifacts from builder
 COPY --from=builder /usr/src/app/.next ./.next
 COPY --from=builder /usr/src/app/public ./public
+COPY --from=builder /usr/src/app/package.json ./package.json
+COPY --from=builder /usr/src/app/next.config.js ./next.config.js
 
-# Expose and start
+# Expose port and start
 EXPOSE 3000
 ENV NODE_ENV=production
-CMD ["npm","run","start"]
+CMD ["npm", "run", "start"]

@@ -7,11 +7,7 @@ import {
   GridPaginationModel,
   GridCellModesModel,
   GridRenderCellParams,
-<<<<<<< HEAD
-  GridColDef,
-=======
   GridColDef, // added
->>>>>>> development
 } from "@mui/x-data-grid";
 import { Box } from "@mui/material";
 import TenantToolbar from "./TenantToolbar";

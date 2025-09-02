@@ -304,7 +304,7 @@ export default function Sidebar({
                 </span>
                 Change Tenant
               </MenuItem>
-            ) : null}
+            )}
 
             <MenuItem
               onClick={() => {

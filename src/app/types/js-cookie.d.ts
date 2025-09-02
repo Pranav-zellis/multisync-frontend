@@ -1,4 +1,5 @@
 declare module "js-cookie" {
-  const Cookies: any;
+  import { CookieStatic } from "js-cookie";
+  const Cookies: CookieStatic;
   export default Cookies;
 }

@@ -8,15 +8,31 @@ import {
   Button,
 } from "@mui/material";
 import { useState, useEffect } from "react";
-import { SuperUser } from "./SuperUserTable";
 import { UPDATE_SUPER_ADMIN } from "../ts/schema";
 import { useGlobalLoader } from "@/context/loader-context";
 import SuperUsersForm from "./SuperUsersForm";
 
+interface UserType {
+  username: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number?: string;
+}
+
+interface FormType {
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  countryCode: string;
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
-  user: SuperUser | null;
+  user: UserType | null;
   isEditing: boolean;
   inviterName: string;
   usersRole: string;
@@ -32,7 +48,7 @@ interface Props {
   }) => void;
 }
 
-const supportedCountryCodes = ["+91", "+1", "+44", "+61", "+971"];
+const supportedCountryCodes = ["+61", "+91", "+1", "+44", "+971"];
 
 export default function SuperUserDialog({
   open,
@@ -48,14 +64,14 @@ export default function SuperUserDialog({
   onSuccess,
   setSnackbar,
 }: Props) {
-  const [form, setForm] = useState<unknown>({ countryCode: "+91" });
+  const [form, setForm] = useState<FormType>({ countryCode: "+61" });
   const [error] = useState<string | null>(null);
   const { showLoader, hideLoader } = useGlobalLoader();
 
   useEffect(() => {
     if (isEditing && user) {
       let phone = user.phone_number || "";
-      let code = "+91";
+      let code = "+61";
       for (const c of supportedCountryCodes) {
         if (phone.startsWith(c)) {
           code = c;
@@ -72,7 +88,7 @@ export default function SuperUserDialog({
         countryCode: code,
       });
     } else {
-      setForm({ countryCode: "+91" });
+      setForm({ countryCode: "+61" });
     }
   }, [open, isEditing, user]);
 
@@ -145,7 +161,9 @@ export default function SuperUserDialog({
       });
       onSuccess();
     } catch (err: unknown) {
-      setSnackbar({ open: true, message: err.message, severity: "error" });
+      const message =
+        err instanceof Error ? err.message : "Something went wrong";
+      setSnackbar({ open: true, message, severity: "error" });
       hideLoader();
     } finally {
       hideLoader();
@@ -158,7 +176,7 @@ export default function SuperUserDialog({
       <DialogContent dividers>
         <SuperUsersForm
           form={form}
-          setForm={setForm}
+          setForm={(val: unknown) => setForm(val as FormType)} // cast val to FormType
           isEditMode={isEditing}
           error={error}
         />

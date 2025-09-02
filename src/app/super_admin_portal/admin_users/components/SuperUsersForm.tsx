@@ -1,10 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { Dispatch, SetStateAction } from "react";
 import { TextField, Box, Select, MenuItem, Alert } from "@mui/material";
 
-export const supportedCountryCodes = ["+91", "+1", "+44", "+61", "+971"];
+// Supported country codes
+export const supportedCountryCodes = ["+61", "+91", "+1", "+44", "+971"];
 
+// Validation functions
 export const isValidUsername = (username: string) =>
   username.length <= 50 && /^[a-zA-Z0-9_]+$/.test(username);
 
@@ -16,13 +18,25 @@ export const isValidEmail = (email: string) =>
 
 export const isPhoneValid = (phone: string) => /^[0-9]{6,14}$/.test(phone);
 
-interface Props {
-  form: unknown;
-  setForm: (val: unknown) => void;
-  error?: string | null;
-  isEditMode?: boolean; // <-- NEW PROP
+// Form type definition
+export interface FormType {
+  username?: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  countryCode: string;
 }
 
+// Props interface
+interface Props {
+  form: FormType; // Properly typed
+  setForm: Dispatch<SetStateAction<FormType>>; // Properly typed
+  error?: string | null;
+  isEditMode?: boolean;
+}
+
+// Component
 export default function SuperUsersForm({
   form,
   setForm,
@@ -38,14 +52,16 @@ export default function SuperUsersForm({
         required
         fullWidth
         value={form.username || ""}
-        onChange={(e) => setForm({ ...form, username: e.target.value })}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, username: e.target.value }))
+        }
         error={!!form.username && !isValidUsername(form.username)}
         helperText={
           form.username && !isValidUsername(form.username)
             ? "Up to 50 characters. Letters, numbers, underscores only."
             : ""
         }
-        disabled={isEditMode} // <-- DISABLED WHEN EDITING
+        disabled={isEditMode}
       />
 
       <TextField
@@ -54,12 +70,14 @@ export default function SuperUsersForm({
         required
         fullWidth
         value={form.email || ""}
-        onChange={(e) => setForm({ ...form, email: e.target.value })}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, email: e.target.value }))
+        }
         error={!!form.email && !isValidEmail(form.email)}
         helperText={
           form.email && !isValidEmail(form.email) ? "Enter a valid email" : ""
         }
-        disabled={isEditMode} // <-- DISABLED WHEN EDITING
+        disabled={isEditMode}
         sx={{ my: 2 }}
       />
 
@@ -69,7 +87,9 @@ export default function SuperUsersForm({
           required
           fullWidth
           value={form.first_name || ""}
-          onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+          onChange={(e) =>
+            setForm((prev) => ({ ...prev, first_name: e.target.value }))
+          }
           error={!!form.first_name && !isValidName(form.first_name)}
           helperText={
             form.first_name && !isValidName(form.first_name)
@@ -81,7 +101,9 @@ export default function SuperUsersForm({
           label="Last Name"
           fullWidth
           value={form.last_name || ""}
-          onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+          onChange={(e) =>
+            setForm((prev) => ({ ...prev, last_name: e.target.value }))
+          }
           error={!!form.last_name && !isValidName(form.last_name)}
           helperText={
             form.last_name && !isValidName(form.last_name)
@@ -94,7 +116,9 @@ export default function SuperUsersForm({
       <Box display="flex" gap={1} sx={{ my: 2 }}>
         <Select
           value={form.countryCode}
-          onChange={(e) => setForm({ ...form, countryCode: e.target.value })}
+          onChange={(e) =>
+            setForm((prev) => ({ ...prev, countryCode: e.target.value }))
+          }
           size="small"
         >
           {supportedCountryCodes.map((code) => (
@@ -107,7 +131,9 @@ export default function SuperUsersForm({
           label="Phone number (optional)"
           fullWidth
           value={form.phone || ""}
-          onChange={(e) => setForm({ ...form, phone: e.target.value })}
+          onChange={(e) =>
+            setForm((prev) => ({ ...prev, phone: e.target.value }))
+          }
           error={!!form.phone && !isPhoneValid(form.phone)}
           helperText={
             form.phone && !isPhoneValid(form.phone)

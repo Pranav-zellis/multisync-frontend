@@ -5,8 +5,9 @@ import {
   Box,
   Typography,
   TextField,
+  Radio,
+  RadioGroup,
   FormControlLabel,
-  Checkbox,
 } from "@mui/material";
 
 interface TenantFormProps {
@@ -44,83 +45,101 @@ export default function TenantForm({
   setErrors,
   isEditing,
 }: TenantFormProps) {
+  // derive current value
+  const currentStatus = statusActive
+    ? "active"
+    : statusInactive
+    ? "inactive"
+    : statusFlaggedToDelete
+    ? "flagged_to_delete"
+    : "";
+
+  // slugify function
+  const slugify = (str: string) =>
+    str
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, "") // remove invalid chars
+      .replace(/\s+/g, "-") // replace spaces with dashes
+      .replace(/-+/g, "-"); // collapse multiple dashes
+
+  const slugifyFirstWords = (str: string, wordLimit = 3) => {
+    const words = str.trim().split(/\s+/).slice(0, wordLimit);
+    return slugify(words.join(" "));
+  };
+
+  const slugName = tenantName ? slugifyFirstWords(tenantName, 3) : "";
+
   return (
     <Box display="flex" flexDirection="column" gap={3}>
       <TextField
         fullWidth
         label="Tenant Name"
-        value={tenantName}
+        value={tenantName} // always store/display the slug
         sx={{ my: 2 }}
         onChange={(e) => {
-          const name = e.target.value;
-          setTenantName(name);
-          if (name.trim()) {
+          const rawName = e.target.value;
+          const slug = slugify(rawName); // convert to slug
+          setTenantName(slug); // store slugified value
+          if (rawName.trim()) {
             setErrors((prev) => ({ ...prev, tenantName: "" }));
           }
         }}
         error={Boolean(errors.tenantName)}
-        helperText={errors.tenantName}
+        helperText={
+          errors.tenantName ? (
+            errors.tenantName
+          ) : tenantName ? (
+            <Box
+              display="flex"
+              alignItems="center"
+              color="success.main"
+              gap={0.2}
+            >
+              <span
+                className="material-symbols-outlined"
+                style={{ fontSize: "15px" }}
+              >
+                task_alt
+              </span>
+              <Typography variant="caption">
+                Your new tenant will be created as "{slugName}"
+              </Typography>
+            </Box>
+          ) : null
+        }
+        FormHelperTextProps={{ sx: { ml: 0 } }}
       />
 
       <Box>
         <Typography fontWeight={500} mb={0.5}>
           Tenant Status
         </Typography>
-        <Box display="flex" gap={4} flexWrap="wrap">
+        <RadioGroup
+          row
+          value={currentStatus}
+          onChange={(e) => {
+            const value = e.target.value;
+            setStatusActive(value === "active");
+            setStatusInactive(value === "inactive");
+            setStatusFlaggedToDelete(value === "flagged_to_delete");
+            setErrors((prev) => ({ ...prev, tenantStatus: "" }));
+          }}
+        >
+          <FormControlLabel value="active" control={<Radio />} label="Active" />
           <FormControlLabel
-            control={
-              <Checkbox
-                checked={statusActive}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  setStatusActive(checked);
-                  if (checked) {
-                    setStatusInactive(false);
-                    setStatusFlaggedToDelete(false);
-                    setErrors((prev) => ({ ...prev, tenantStatus: "" }));
-                  }
-                }}
-              />
-            }
-            label="Active"
-          />
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={statusInactive}
-                onChange={(e) => {
-                  const checked = e.target.checked;
-                  setStatusInactive(checked);
-                  if (checked) {
-                    setStatusActive(false);
-                    setStatusFlaggedToDelete(false);
-                    setErrors((prev) => ({ ...prev, tenantStatus: "" }));
-                  }
-                }}
-              />
-            }
+            value="inactive"
+            control={<Radio />}
             label="Inactive"
           />
           {isEditing && (
             <FormControlLabel
-              control={
-                <Checkbox
-                  checked={statusFlaggedToDelete}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    setStatusFlaggedToDelete(checked);
-                    if (checked) {
-                      setStatusActive(false);
-                      setStatusInactive(false);
-                      setErrors((prev) => ({ ...prev, tenantStatus: "" }));
-                    }
-                  }}
-                />
-              }
+              value="flagged_to_delete"
+              control={<Radio />}
               label="Flagged to Delete"
             />
           )}
-        </Box>
+        </RadioGroup>
         {errors.tenantStatus && (
           <Typography variant="caption" color="error">
             {errors.tenantStatus}

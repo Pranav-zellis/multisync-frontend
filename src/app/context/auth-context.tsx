@@ -5,8 +5,26 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { useGlobalLoader } from "@/context/loader-context";
 
+interface AuthUser {
+  username: string;
+  first_name: string;
+  groups: string[];
+  userPoolId: string;
+  customAttributes: {
+    email: string;
+    email_verified: string;
+    phone_number: string;
+    phone_number_verified: string;
+    name: string;
+    family_name: string;
+    "custom:inviter_name": string;
+    "custom:users_role": string;
+    sub: string;
+  };
+}
+
 type AuthContextType = {
-  user: unknown;
+  user: AuthUser | null;
   loading: boolean;
 };
 

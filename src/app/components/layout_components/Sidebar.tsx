@@ -15,8 +15,16 @@ import {
 import { usePathname, useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 
+type SidebarUser = {
+  first_name?: string;
+  groups?: string[];
+  email?: string;
+  username?: string;
+  [key: string]: any; // for other dynamic fields if needed
+};
+
 interface SidebarProps {
-  user: unknown;
+  user: SidebarUser | null;
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   mobileOpen: boolean;
@@ -219,30 +227,29 @@ export default function Sidebar({
               >
                 <ListItemIcon
                   sx={{
-                    borderRadius: "15px",
+                    borderRadius: "50%", // 👈 circle shape
+                    width: 40, // 👈 fixed size
+                    height: 50,
                     mr: showText ? 2 : 0,
+                    display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
-                    minHeight: 40,
-                    mb: showText ? 0 : "4px",
-                    textAlign: "center",
                     fontWeight: 600,
-                    fontSize: 14,
+                    fontSize: 18, // 👈 increased font size
                     color: "white",
                     background: "#252830",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
-                    maxWidth: "120px",
                   }}
                 >
-                  {user?.username?.charAt(0).toUpperCase() || "N"}
+                  {user?.first_name?.charAt(0).toUpperCase() || "N"}
                 </ListItemIcon>
 
                 <ListItemText
-                  primary={user?.username || "Name"}
+                  primary={user?.first_name || "Name"}
                   primaryTypographyProps={{
-                    fontSize: 12,
+                    fontSize: 16, // 👈 slightly bigger for better readability
                     fontWeight: 600,
                     color: "#333",
                   }}
@@ -265,7 +272,7 @@ export default function Sidebar({
               horizontal: "right",
             }}
             PaperProps={{
-              elevation: 3,
+              elevation: 5,
               sx: { minWidth: 180 },
             }}
           >
@@ -279,7 +286,8 @@ export default function Sidebar({
               Profile
             </MenuItem>
 
-            {(user?.groups?.length > 1 || user?.groups?.includes("*")) && (
+            {(user?.groups?.length ??
+              (0 > 1 || user?.groups?.includes("*"))) && (
               <MenuItem
                 onClick={() => {
                   handleMenuClose();

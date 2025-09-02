@@ -7,11 +7,21 @@ import { Box, Button, Card, CardContent, Typography } from "@mui/material";
 import { useGlobalLoader } from "@/context/loader-context";
 import { useAuth } from "@/context/auth-context";
 
-export default function Dashboard() {
+export type AuthUser = {
+  username: string;
+  email?: string;
+  userPoolId: string;
+  groups?: string[];
+  customAttributes?: {
+    [key: string]: string;
+  };
+};
+
+export default function Home() {
   const router = useRouter();
   const [tenant, setTenant] = useState<string | null>(null);
   const { showLoader } = useGlobalLoader();
-  const { user } = useAuth();
+  const { user } = useAuth() as { user: AuthUser | null };
 
   useEffect(() => {
     const tenantCookie = Cookies.get("tenant");

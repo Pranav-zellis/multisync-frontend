@@ -53,9 +53,15 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [confirmInput, setConfirmInput] = useState("");
 
-  const [currentTenantName, setCurrentTenantName] = useState(tenant.tenant_name);
-  const [statusActive, setStatusActive] = useState(tenant.tenant_status === "active");
-  const [statusInactive, setStatusInactive] = useState(tenant.tenant_status === "inactive");
+  const [currentTenantName, setCurrentTenantName] = useState(
+    tenant.tenant_name
+  );
+  const [statusActive, setStatusActive] = useState(
+    tenant.tenant_status === "active"
+  );
+  const [statusInactive, setStatusInactive] = useState(
+    tenant.tenant_status === "inactive"
+  );
   const [statusFlaggedToDelete, setStatusFlaggedToDelete] = useState(
     tenant.tenant_status === "flagged_to_delete"
   );
@@ -98,7 +104,10 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
       : null;
 
     if (!selectedStatus) {
-      setErrors((prev) => ({ ...prev, tenantStatus: "Select exactly one status" }));
+      setErrors((prev) => ({
+        ...prev,
+        tenantStatus: "Select exactly one status",
+      }));
       return;
     }
 
@@ -181,9 +190,15 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        <MenuItem onClick={() => handleActionClick("tenantEdit")}>Edit</MenuItem>
-        <MenuItem onClick={() => handleActionClick("tenantDelete")}>Delete</MenuItem>
-        <MenuItem onClick={() => handleActionClick("createAdmin")}>Create New Admin User</MenuItem>
+        <MenuItem onClick={() => handleActionClick("tenantEdit")}>
+          Edit
+        </MenuItem>
+        <MenuItem onClick={() => handleActionClick("tenantDelete")}>
+          Delete
+        </MenuItem>
+        <MenuItem onClick={() => handleActionClick("createAdmin")}>
+          Create New Admin User
+        </MenuItem>
       </Menu>
 
       {/* Edit Dialog */}
@@ -220,8 +235,9 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
         <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            This is a destructive process. Upon confirming, <strong>{tenant.tenant_name}</strong> tenant will
-            be permanently deleted.
+            This is a destructive process. Upon confirming,{" "}
+            <strong>{tenant.tenant_name}</strong> tenant will be permanently
+            deleted.
             <br />
             <br />
             Please type <strong>{tenant.tenant_name}</strong> in the input below to confirm.

@@ -131,8 +131,7 @@ export default function TenantStatsCard() {
       setIsEditing(false);
     } catch (error: unknown) {
       console.error("Failed to save tenant:", error);
-      const errMsg =
-        error instanceof Error ? error.message : "Failed to save tenant";
+      const errMsg = error instanceof Error ? error.message : "Failed to save tenant";
       showSnackbar(errMsg, "error");
     } finally {
       hideLoader();
@@ -158,6 +157,7 @@ export default function TenantStatsCard() {
           boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
           backgroundColor: "#f7f9ff",
           p: 3,
+          minWidth: "20rem",
         }}
       >
         <Typography variant="h6" align="center" fontWeight={600} gutterBottom>
@@ -166,25 +166,15 @@ export default function TenantStatsCard() {
 
         <Grid container spacing={10} justifyContent="center">
           <Grid item xs={6}>
-            <Typography
-              align="left"
-              variant="h4"
-              color="#5071a5"
-              fontWeight={700}
-            >
+            <Typography align="left" variant="h4" color="#5071a5" fontWeight={700}>
               {tenantStatus.active}
             </Typography>
             <Typography align="center" variant="body2">
               Active tenants
             </Typography>
           </Grid>
-          <Grid  item xs={6}>
-            <Typography
-              align="right"
-              variant="h4"
-              color="#5071a5"
-              fontWeight={700}
-            >
+          <Grid item xs={6}>
+            <Typography align="right" variant="h4" color="#5071a5" fontWeight={700}>
               {tenantStatus.inactive}
             </Typography>
             <Typography align="center" variant="body2">

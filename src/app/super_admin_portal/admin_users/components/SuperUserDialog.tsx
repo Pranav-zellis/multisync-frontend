@@ -48,7 +48,7 @@ interface Props {
   }) => void;
 }
 
-const supportedCountryCodes = ["+91", "+1", "+44", "+61", "+971"];
+const supportedCountryCodes = ["+61", "+91", "+1", "+44", "+971"];
 
 export default function SuperUserDialog({
   open,
@@ -64,14 +64,14 @@ export default function SuperUserDialog({
   onSuccess,
   setSnackbar,
 }: Props) {
-  const [form, setForm] = useState<FormType>({ countryCode: "+91" });
+  const [form, setForm] = useState<FormType>({ countryCode: "+61" });
   const [error] = useState<string | null>(null);
   const { showLoader, hideLoader } = useGlobalLoader();
 
   useEffect(() => {
     if (isEditing && user) {
       let phone = user.phone_number || "";
-      let code = "+91";
+      let code = "+61";
       for (const c of supportedCountryCodes) {
         if (phone.startsWith(c)) {
           code = c;
@@ -88,11 +88,11 @@ export default function SuperUserDialog({
         countryCode: code,
       });
     } else {
-      setForm({ countryCode: "+91" });
+      setForm({ countryCode: "+61" });
     }
   }, [open, isEditing, user]);
 
-  const createUser = async (input: Record<string, unknown>) => {
+  const createUser = async (input: unknown) => {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -108,7 +108,7 @@ export default function SuperUserDialog({
     }
   };
 
-  const updateUser = async (input: Record<string, unknown>) => {
+  const updateUser = async (input: unknown) => {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -160,8 +160,9 @@ export default function SuperUserDialog({
         severity: "success",
       });
       onSuccess();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Something went wrong";
       setSnackbar({ open: true, message, severity: "error" });
       hideLoader();
     } finally {
@@ -175,7 +176,7 @@ export default function SuperUserDialog({
       <DialogContent dividers>
         <SuperUsersForm
           form={form}
-          setForm={setForm}
+          setForm={(val: unknown) => setForm(val as FormType)} // cast val to FormType
           isEditMode={isEditing}
           error={error}
         />

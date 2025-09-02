@@ -3,8 +3,10 @@
 import React, { Dispatch, SetStateAction } from "react";
 import { TextField, Box, Select, MenuItem, Alert } from "@mui/material";
 
-export const supportedCountryCodes = ["+91", "+1", "+44", "+61", "+971"];
+// Supported country codes
+export const supportedCountryCodes = ["+61", "+91", "+1", "+44", "+971"];
 
+// Validation functions
 export const isValidUsername = (username: string) =>
   username.length <= 50 && /^[a-zA-Z0-9_]+$/.test(username);
 
@@ -16,6 +18,7 @@ export const isValidEmail = (email: string) =>
 
 export const isPhoneValid = (phone: string) => /^[0-9]{6,14}$/.test(phone);
 
+// Form type definition
 export interface FormType {
   username?: string;
   email?: string;
@@ -25,13 +28,15 @@ export interface FormType {
   countryCode: string;
 }
 
+// Props interface
 interface Props {
-  form: FormType;
-  setForm: Dispatch<SetStateAction<FormType>>;
+  form: FormType; // Properly typed
+  setForm: Dispatch<SetStateAction<FormType>>; // Properly typed
   error?: string | null;
   isEditMode?: boolean;
 }
 
+// Component
 export default function SuperUsersForm({
   form,
   setForm,
@@ -47,7 +52,9 @@ export default function SuperUsersForm({
         required
         fullWidth
         value={form.username || ""}
-        onChange={(e) => setForm((prev) => ({ ...prev, username: e.target.value }))}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, username: e.target.value }))
+        }
         error={!!form.username && !isValidUsername(form.username)}
         helperText={
           form.username && !isValidUsername(form.username)
@@ -63,7 +70,9 @@ export default function SuperUsersForm({
         required
         fullWidth
         value={form.email || ""}
-        onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+        onChange={(e) =>
+          setForm((prev) => ({ ...prev, email: e.target.value }))
+        }
         error={!!form.email && !isValidEmail(form.email)}
         helperText={
           form.email && !isValidEmail(form.email) ? "Enter a valid email" : ""

@@ -113,9 +113,26 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
 
     try {
       showLoader();
+
+      const slugify = (str: string) =>
+        str
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9\s-]/g, "") // remove invalid chars
+          .replace(/\s+/g, "-") // replace spaces with dashes
+          .replace(/-+/g, "-"); // collapse multiple dashes
+
+      const slugifyFirstWords = (str: string, wordLimit = 3) => {
+        const words = str.trim().split(/\s+/).slice(0, wordLimit);
+        return slugify(words.join(" "));
+      };
+
+      const slugifiedTenantName = currentTenantName
+        ? slugifyFirstWords(currentTenantName, 3)
+        : "";
       await updateTenant({
         schema: tenant.schema,
-        tenant_name: currentTenantName,
+        tenant_name: slugifiedTenantName,
         tenant_status: selectedStatus,
       });
       showSnackbar("Tenant updated successfully", "success");
@@ -176,8 +193,17 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
   return (
     <>
       {/* Actions Icon */}
-      <Box display="flex" justifyContent="center" alignItems="center" height="100%">
-        <Icon className="material-symbols-outlined" style={{ cursor: "pointer" }} onClick={handleMenuOpen}>
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        height="100%"
+      >
+        <Icon
+          className="material-symbols-outlined"
+          style={{ cursor: "pointer" }}
+          onClick={handleMenuOpen}
+        >
           more_vert
         </Icon>
       </Box>
@@ -240,7 +266,8 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
             deleted.
             <br />
             <br />
-            Please type <strong>{tenant.tenant_name}</strong> in the input below to confirm.
+            Please type <strong>{tenant.tenant_name}</strong> in the input below
+            to confirm.
           </DialogContentText>
           <TextField
             fullWidth
@@ -260,7 +287,8 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
             color="error"
             variant="contained"
             disabled={
-              confirmInput.trim().toLowerCase() !== tenant.tenant_name.trim().toLowerCase()
+              confirmInput.trim().toLowerCase() !==
+              tenant.tenant_name.trim().toLowerCase()
             }
           >
             Confirm Delete

@@ -1,4 +1,3 @@
-// app/context/auth-context.tsx
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
@@ -26,15 +25,18 @@ interface AuthUser {
 type AuthContextType = {
   user: AuthUser | null;
   loading: boolean;
+  setUser: (user: AuthUser | null) => void;
 };
 
+// Create AuthContext with default values
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
+  setUser: () => {},
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const { showLoader, hideLoader } = useGlobalLoader();
 
@@ -58,7 +60,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (res.ok) {
           const data = await res.json();
-          setUser(data);
+          setUser(data as AuthUser); // Ensure data matches AuthUser shape
         }
       } catch (err) {
         console.error("Auth fetch failed", err);
@@ -72,7 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [showLoader, hideLoader]); // <-- added here
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ user, loading, setUser }}>
       {children}
     </AuthContext.Provider>
   );

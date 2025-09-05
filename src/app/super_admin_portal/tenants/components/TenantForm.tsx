@@ -103,7 +103,7 @@ export default function TenantForm({
                 task_alt
               </span>
               <Typography variant="caption">
-                Your new tenant will be created as "{slugName}"
+                Your new tenant will be created as &quot;{slugName}&quot;
               </Typography>
             </Box>
           ) : null

@@ -51,7 +51,7 @@ export default function Home() {
                 <strong>Username:</strong> {user.username}
               </Typography>
               <Typography variant="subtitle1">
-                <strong>Email:</strong> {user.customAttributes?.email}
+                <strong>Email:</strong> {user.customAttributes?.email || "N/A"}
               </Typography>
               <Typography variant="subtitle1">
                 <strong>User Pool ID:</strong> {user.userPoolId}
@@ -84,15 +84,9 @@ export default function Home() {
             </>
           ) : (
             <Box mt={2}>
-              <Box mt={2}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  href="/api/auth/login"
-                >
-                  Login
-                </Button>
-              </Box>
+              <Button variant="contained" color="primary" href="/api/auth/login">
+                Login
+              </Button>
             </Box>
           )}
         </CardContent>

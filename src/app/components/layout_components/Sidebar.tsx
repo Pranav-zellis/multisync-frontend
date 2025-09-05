@@ -20,7 +20,7 @@ type SidebarUser = {
   groups?: string[];
   email?: string;
   username?: string;
-  [key: string]: any; // for other dynamic fields if needed
+  [key: string]: unknown; // for other dynamic fields if needed
 };
 
 interface SidebarProps {

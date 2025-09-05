@@ -73,7 +73,10 @@ export default function Home() {
                         credentials: "include",
                       }
                     ).then(() => {
-                      Cookies.remove("tenant");
+                      Cookies.remove("tenant", {
+                        path: "/", // same path
+                        domain: ".zellis.io", // same domain
+                      });
                       router.push("/");
                     });
                   }}
@@ -84,7 +87,11 @@ export default function Home() {
             </>
           ) : (
             <Box mt={2}>
-              <Button variant="contained" color="primary" href="/api/auth/login">
+              <Button
+                variant="contained"
+                color="primary"
+                href="/api/auth/login"
+              >
                 Login
               </Button>
             </Box>

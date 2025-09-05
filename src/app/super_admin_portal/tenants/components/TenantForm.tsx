@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Box,
   Typography,
@@ -45,15 +45,6 @@ export default function TenantForm({
   setErrors,
   isEditing,
 }: TenantFormProps) {
-  // derive current value
-  const currentStatus = statusActive
-    ? "active"
-    : statusInactive
-    ? "inactive"
-    : statusFlaggedToDelete
-    ? "flagged_to_delete"
-    : "";
-
   // slugify function
   const slugify = (str: string) =>
     str
@@ -75,12 +66,11 @@ export default function TenantForm({
       <TextField
         fullWidth
         label="Tenant Name"
-        value={tenantName} // always store/display the slug
+        value={tenantName} // now stores/display raw input (with spaces)
         sx={{ my: 2 }}
         onChange={(e) => {
           const rawName = e.target.value;
-          const slug = slugify(rawName); // convert to slug
-          setTenantName(slug); // store slugified value
+          setTenantName(rawName); // store raw text
           if (rawName.trim()) {
             setErrors((prev) => ({ ...prev, tenantName: "" }));
           }
@@ -90,12 +80,7 @@ export default function TenantForm({
           errors.tenantName ? (
             errors.tenantName
           ) : tenantName ? (
-            <Box
-              display="flex"
-              alignItems="center"
-              color="success.main"
-              gap={0.2}
-            >
+            <Box display="flex" alignItems="center" color="success.main" gap={0.2}>
               <span
                 className="material-symbols-outlined"
                 style={{ fontSize: "15px" }}
@@ -117,7 +102,15 @@ export default function TenantForm({
         </Typography>
         <RadioGroup
           row
-          value={currentStatus}
+          value={
+            statusActive
+              ? "active"
+              : statusInactive
+              ? "inactive"
+              : statusFlaggedToDelete
+              ? "flagged_to_delete"
+              : ""
+          }
           onChange={(e) => {
             const value = e.target.value;
             setStatusActive(value === "active");
@@ -127,11 +120,7 @@ export default function TenantForm({
           }}
         >
           <FormControlLabel value="active" control={<Radio />} label="Active" />
-          <FormControlLabel
-            value="inactive"
-            control={<Radio />}
-            label="Inactive"
-          />
+          <FormControlLabel value="inactive" control={<Radio />} label="Inactive" />
           {isEditing && (
             <FormControlLabel
               value="flagged_to_delete"

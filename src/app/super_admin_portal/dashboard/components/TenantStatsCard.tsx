@@ -30,8 +30,9 @@ export default function TenantStatsCard() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [tenantName, setTenantName] = useState<string>("");
   const [statusActive, setStatusActive] = useState<boolean>(false);
-  const [statusInactive, setStatusInactive] = useState<boolean>(false);
-  const [statusFlaggedToDelete, setStatusFlaggedToDelete] = useState<boolean>(false);
+  const [statusInactive, setStatusInactive] = useState<boolean>(true);
+  const [statusFlaggedToDelete, setStatusFlaggedToDelete] =
+    useState<boolean>(false);
   const [errors, setErrors] = useState<ErrorsType>({
     tenantName: "",
     tenantStatus: "",
@@ -113,8 +114,18 @@ export default function TenantStatsCard() {
   const handleSave = async () => {
     try {
       showLoader();
+      const slugify = (str: string) =>
+        str
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9\s-]/g, "") // remove invalid chars
+          .replace(/\s+/g, "-") // replace spaces with dashes
+          .replace(/-+/g, "-"); // collapse multiple dashes
+
+      // Ensure tenantName is slugified before sending
+      const slugifiedTenantName = slugify(tenantName.trim());
       await createTenant({
-        tenant_name: tenantName,
+        tenant_name: slugifiedTenantName,
         tenant_status: statusActive ? "active" : "inactive",
       });
       showSnackbar("Tenant created successfully", "success");
@@ -131,7 +142,8 @@ export default function TenantStatsCard() {
       setIsEditing(false);
     } catch (error: unknown) {
       console.error("Failed to save tenant:", error);
-      const errMsg = error instanceof Error ? error.message : "Failed to save tenant";
+      const errMsg =
+        error instanceof Error ? error.message : "Failed to save tenant";
       showSnackbar(errMsg, "error");
     } finally {
       hideLoader();
@@ -166,7 +178,12 @@ export default function TenantStatsCard() {
 
         <Grid container spacing={10} justifyContent="center">
           <Grid item xs={6}>
-            <Typography align="left" variant="h4" color="#5071a5" fontWeight={700}>
+            <Typography
+              align="left"
+              variant="h4"
+              color="#5071a5"
+              fontWeight={700}
+            >
               {tenantStatus.active}
             </Typography>
             <Typography align="center" variant="body2">
@@ -174,7 +191,12 @@ export default function TenantStatsCard() {
             </Typography>
           </Grid>
           <Grid item xs={6}>
-            <Typography align="right" variant="h4" color="#5071a5" fontWeight={700}>
+            <Typography
+              align="right"
+              variant="h4"
+              color="#5071a5"
+              fontWeight={700}
+            >
               {tenantStatus.inactive}
             </Typography>
             <Typography align="center" variant="body2">

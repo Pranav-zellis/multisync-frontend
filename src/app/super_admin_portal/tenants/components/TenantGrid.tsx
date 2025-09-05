@@ -188,8 +188,12 @@ export default function TenantGrid() {
           .replace(/\s+/g, "-") // replace spaces with dashes
           .replace(/-+/g, "-"); // collapse multiple dashes
 
-      // Ensure tenantName is slugified before sending
-      const slugifiedTenantName = slugify(tenantName.trim());
+      const slugifyFirstWords = (str: string, wordLimit = 3) => {
+        const words = str.trim().split(/\s+/).slice(0, wordLimit);
+        return slugify(words.join(" "));
+      };
+
+      const slugifiedTenantName = tenantName ? slugifyFirstWords(tenantName, 3) : "";
       showLoader();
       if (isEditing && editingSchema) {
         await updateTenant({

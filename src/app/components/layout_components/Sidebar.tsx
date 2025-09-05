@@ -67,7 +67,10 @@ export default function Sidebar({
       method: "GET",
       credentials: "include",
     });
-    Cookies.remove("tenant");
+    Cookies.remove("tenant", {
+      path: "/", // same path
+      domain: ".zellis.io", // same domain
+    });
     router.push("/");
   };
 
@@ -292,7 +295,10 @@ export default function Sidebar({
                 onClick={() => {
                   handleMenuClose();
                   showLoader();
-                  Cookies.remove("tenant");
+                  Cookies.remove("tenant", {
+                    path: "/", // same path
+                    domain: ".zellis.io", // same domain
+                  });
                   router.push("/tenants");
                 }}
               >

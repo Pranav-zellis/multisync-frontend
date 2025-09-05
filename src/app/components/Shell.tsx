@@ -35,7 +35,6 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     user: CustomUser | null;
     loading: boolean;
   };
-  
 
   const { showLoader, hideLoader } = useGlobalLoader();
 
@@ -100,7 +99,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const handleRelogin = () => {
     setSessionExpired(false);
     showLoader();
-    Cookies.remove("tenant");
+    Cookies.remove("tenant", {
+      path: "/", // same path
+      domain: ".zellis.io", // same domain
+    });
     window.location.href = "/";
   };
 

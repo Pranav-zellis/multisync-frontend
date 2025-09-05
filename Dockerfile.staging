@@ -1,8 +1,7 @@
-# ————————————————————————
-# Stage 1: Build (with glibc support for Next.js)
+# Stage 1: Build (Debian-slim for glibc support)
 FROM node:20-slim AS builder
 
-# Accept envs at build time (public Next.js vars must be set here)
+# Accept and expose API URL at build time
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_API_BASE_URL
 
@@ -13,27 +12,27 @@ WORKDIR /usr/src/app
 
 # Install all dependencies (dev + prod)
 COPY package*.json ./
-RUN npm ci
+
+# Use npm install instead of npm ci to avoid lock file issues
+RUN npm install
 
 # Copy source & build
 COPY . .
-RUN npm run build   # Next.js build step embeds NEXT_PUBLIC_* vars
+RUN npm run build
 
-# ————————————————————————
-# Stage 2: Runtime (lightweight prod image)
+# Stage 2: Runtime (slim prod image)
 FROM node:20-slim AS runtime
 WORKDIR /usr/src/app
 
 # Install only production dependencies
 COPY package*.json ./
-RUN npm ci --omit=dev
+
+# Install prod dependencies only, skipping dev dependencies
+RUN npm install --omit=dev
 
 # Copy build artifacts from builder
 COPY --from=builder /usr/src/app/.next ./.next
 COPY --from=builder /usr/src/app/public ./public
-COPY --from=builder /usr/src/app/node_modules ./node_modules
-COPY --from=builder /usr/src/app/package.json ./package.json
-COPY --from=builder /usr/src/app/next.config.js ./next.config.js
 
 # Expose port and start
 EXPOSE 3000

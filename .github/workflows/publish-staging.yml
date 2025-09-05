@@ -48,8 +48,8 @@ jobs:
           IMAGE=${ECR_REGISTRY}/${IMAGE_NAME}
           docker build --progress=plain \
             --file Dockerfile.staging \
-            --build-arg NEXT_PUBLIC_API_URL=https://multisync.zellis.io \
-            --build-arg NEXT_PUBLIC_API_BASE_URL=https://multisync.zellis.io \
+            --build-arg NEXT_PUBLIC_API_URL=https://api.multisync.zellis.io \
+            --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.multisync.zellis.io \
             --tag ${IMAGE}:staging \
             --tag ${IMAGE}:staging-${GIT_SHA} \
             .

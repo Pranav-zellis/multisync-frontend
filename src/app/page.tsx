@@ -27,7 +27,8 @@ export default function Home() {
       return;
     }
     // 🔴 If not authenticated, redirect to Cognito login
-    window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`;
+    console.log(process.env.NEXT_PUBLIC_API_BASE_URL);
+    // window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`;
   }, [user, loading, router, showLoader]); // <-- added router and showLoader
 
   return null;

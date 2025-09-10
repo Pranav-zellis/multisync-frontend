@@ -176,7 +176,7 @@ export default function TenantStatsCard() {
           Tenant Stats
         </Typography>
 
-        <Grid container spacing={10} justifyContent="center">
+        <Grid container spacing={6} justifyContent="space-between">
           <Grid item xs={6}>
             <Typography
               align="left"
@@ -186,10 +186,11 @@ export default function TenantStatsCard() {
             >
               {tenantStatus.active}
             </Typography>
-            <Typography align="center" variant="body2">
+            <Typography align="left" variant="body2">
               Active tenants
             </Typography>
           </Grid>
+
           <Grid item xs={6}>
             <Typography
               align="right"
@@ -199,7 +200,7 @@ export default function TenantStatsCard() {
             >
               {tenantStatus.inactive}
             </Typography>
-            <Typography align="center" variant="body2">
+            <Typography align="right" variant="body2">
               Inactive tenants
             </Typography>
           </Grid>

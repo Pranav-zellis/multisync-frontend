@@ -54,12 +54,12 @@ export default function TenantForm({
       .replace(/\s+/g, "-") // replace spaces with dashes
       .replace(/-+/g, "-"); // collapse multiple dashes
 
-  const slugifyFirstWords = (str: string, wordLimit = 3) => {
-    const words = str.trim().split(/\s+/).slice(0, wordLimit);
+  const slugifyFirstWords = (str: string) => {
+    const words = str.trim().split(/\s+/);
     return slugify(words.join(" "));
   };
 
-  const slugName = tenantName ? slugifyFirstWords(tenantName, 3) : "";
+  const slugName = tenantName ? slugifyFirstWords(tenantName) : "";
 
   return (
     <Box display="flex" flexDirection="column" gap={3}>
@@ -88,7 +88,7 @@ export default function TenantForm({
                 task_alt
               </span>
               <Typography variant="caption">
-                Your new tenant will be created as &quot;{slugName}&quot;
+                Your tenant will now be called &quot;{slugName}&quot;
               </Typography>
             </Box>
           ) : null

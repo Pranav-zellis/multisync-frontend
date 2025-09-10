@@ -7,9 +7,11 @@ import {
   GridPaginationModel,
   GridCellModesModel,
   GridRenderCellParams,
-  GridColDef, // added
+  GridColDef,
+  GridRenderEditCellParams,
+  useGridApiContext,
 } from "@mui/x-data-grid";
-import { Box } from "@mui/material";
+import { Box, TextField, Typography, Paper, Popper } from "@mui/material";
 import TenantToolbar from "./TenantToolbar";
 import TenantDialog from "./TenantDialog";
 import GlobalSnackbar from "@/components/GlobalSnackbar";
@@ -32,6 +34,110 @@ export interface SuperUser {
   last_name: string;
   email: string;
   phone_number: string;
+}
+
+// 🔹 Slugify helper
+const slugify = (str: string) =>
+  str
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+
+// 🔹 Custom Edit Cell for Tenant Name with suggestion
+function TenantNameEditCell(props: GridRenderEditCellParams) {
+  const { id, field, value } = props;
+  const apiRef = useGridApiContext();
+
+  const [inputValue, setInputValue] = useState<string>(value || "");
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = event.target.value;
+    setInputValue(newValue);
+    apiRef.current.setEditCellValue({ id, field, value: newValue });
+  };
+
+  const slug = slugify(inputValue);
+
+  return (
+    <Box
+      sx={{
+        width: "100%", // fill DataGrid cell width
+        height: "100%", // fill DataGrid cell height
+        display: "flex",
+        alignItems: "center",
+      }}
+    >
+      <TextField
+        size="small"
+        value={inputValue}
+        onChange={handleChange}
+        placeholder="Enter tenant name"
+        autoFocus
+        inputRef={setAnchorEl}
+        sx={{
+          width: "100%",
+          height: "100%",
+          "& .MuiOutlinedInput-notchedOutline": {
+            border: "none", // remove outline border
+          },
+          "& .MuiBox-root": {
+            width: "100%",
+            height: "100%",
+          },
+          "& .MuiInputBase-root": {
+            height: "100%", // match DataGrid row height
+            width: "100%",
+            fontSize: "0.875rem", // match grid font
+            padding: "0 8px",
+            boxSizing: "border-box",
+          },
+          "& .MuiInputBase-input": {
+            height: "100%",
+            width: "100%",
+            padding: 0,
+            boxSizing: "border-box",
+          },
+        }}
+      />
+
+      <Popper
+        open={Boolean(inputValue)}
+        anchorEl={anchorEl}
+        placement="bottom-start"
+        style={{
+          zIndex: 1300,
+          width: anchorEl ? anchorEl.offsetWidth : "auto", // exact cell width
+        }}
+      >
+        <Paper
+          sx={{
+            p: 1,
+            mt: 0.5,
+            border: "1px solid #e0e0e0",
+            borderRadius: "8px",
+            boxShadow: "0px 4px 10px rgba(0,0,0,0.08)",
+            width: "100%",
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{ fontSize: "0.8rem", color: "text.secondary" }}
+          >
+            Your tenant will now be called:{" "}
+            <Box
+              component="span"
+              sx={{ fontWeight: 600, color: "text.primary" }}
+            >
+              {slug}
+            </Box>
+          </Typography>
+        </Paper>
+      </Popper>
+    </Box>
+  );
 }
 
 export default function TenantGrid() {
@@ -125,11 +231,6 @@ export default function TenantGrid() {
     fetchTenants();
   }, [fetchTenants]);
 
-  useEffect(() => {
-    isClient.current = true;
-    fetchTenants();
-  }, [fetchTenants]);
-
   const updateTenant = async (input: UpdateTenantInput): Promise<Tenant> => {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`, {
       method: "POST",
@@ -180,20 +281,7 @@ export default function TenantGrid() {
     if (hasError) return;
 
     try {
-      const slugify = (str: string) =>
-        str
-          .toLowerCase()
-          .trim()
-          .replace(/[^a-z0-9\s-]/g, "") // remove invalid chars
-          .replace(/\s+/g, "-") // replace spaces with dashes
-          .replace(/-+/g, "-"); // collapse multiple dashes
-
-      const slugifyFirstWords = (str: string, wordLimit = 3) => {
-        const words = str.trim().split(/\s+/).slice(0, wordLimit);
-        return slugify(words.join(" "));
-      };
-
-      const slugifiedTenantName = tenantName ? slugifyFirstWords(tenantName, 3) : "";
+      const slugifiedTenantName = slugify(tenantName);
       showLoader();
       if (isEditing && editingSchema) {
         await updateTenant({
@@ -237,9 +325,10 @@ export default function TenantGrid() {
     if (!hasChanged) return oldRow;
     try {
       showLoader();
+      const slugifiedTenantName = slugify(updatedRow.tenant_name);
       const updated = await updateTenant({
         schema: updatedRow.schema,
-        tenant_name: updatedRow.tenant_name,
+        tenant_name: slugifiedTenantName,
         tenant_status:
           updatedRow.tenant_status as UpdateTenantInput["tenant_status"],
       });
@@ -274,6 +363,7 @@ export default function TenantGrid() {
       headerName: "Tenant Name",
       flex: 1,
       editable: true,
+      renderEditCell: (params) => <TenantNameEditCell {...params} />,
     },
     {
       field: "tenant_status",

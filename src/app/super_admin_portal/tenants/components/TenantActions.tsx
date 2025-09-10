@@ -122,13 +122,13 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
           .replace(/\s+/g, "-") // replace spaces with dashes
           .replace(/-+/g, "-"); // collapse multiple dashes
 
-      const slugifyFirstWords = (str: string, wordLimit = 3) => {
-        const words = str.trim().split(/\s+/).slice(0, wordLimit);
+      const slugifyFirstWords = (str: string) => {
+        const words = str.trim().split(/\s+/);
         return slugify(words.join(" "));
       };
 
       const slugifiedTenantName = currentTenantName
-        ? slugifyFirstWords(currentTenantName, 3)
+        ? slugifyFirstWords(currentTenantName)
         : "";
       await updateTenant({
         schema: tenant.schema,

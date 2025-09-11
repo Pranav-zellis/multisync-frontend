@@ -73,11 +73,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             href: "/super_admin_portal/tenants",
             icon: "groups",
           },
-          {
-            label: "Settings",
-            href: "/super_admin_portal/settings",
-            icon: "settings",
-          },
+          // {
+          //   label: "Settings",
+          //   href: "/super_admin_portal/settings",
+          //   icon: "settings",
+          // },
         ]
       : [{ label: "Dashboard", href: "/dashboard", icon: "dashboard" }];
 

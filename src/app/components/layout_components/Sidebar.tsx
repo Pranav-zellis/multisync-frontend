@@ -139,7 +139,8 @@ export default function Sidebar({
             )}
           </Box>
 
-          <List sx={{ pt: "30px" }}>
+          {/* Navigation Items */}
+          <List >
             {navItems.map(({ label, href, icon }) => {
               const selected = pathname === href;
               const showText = sidebarOpen || isMobile;
@@ -149,52 +150,80 @@ export default function Sidebar({
                   selected={selected}
                   onClick={() => handleNavigate(href)}
                   sx={{
-                    my: 1,
-                    mx: 2,
+                    display: "flex",
                     flexDirection: showText ? "row" : "column",
                     justifyContent: "center",
                     alignItems: "center",
                     px: showText ? 2 : 1,
-                    height: showText ? 48 : 72,
-                    borderRadius: 2,
-                    "&.Mui-selected": {
+                    height: showText ? 48 : 60,
+                    borderRadius: showText && selected ? 24 : 2,
+                    margin: showText ? "8px 15px 8px 13px" : "7px 0 7px 0",
+                    transition: "all 0.3s ease",
+                    "& .MuiListItemIcon-root": {
                       backgroundColor: "transparent",
+                      borderRadius: 4,
+                      padding: 0,
+                    },
+                    "&.Mui-selected": {
+                      backgroundColor: showText ? "#FF982E" : "transparent",
+                      borderRadius: 24,
                       "& .MuiListItemIcon-root": {
                         backgroundColor: "#FF982E",
                         color: "#fff",
                       },
+                      "& .MuiListItemText-primary": {
+                        color: showText ? "#fff" : "#FF982E",
+                      },
+                    },
+                    "&.Mui-selected:hover": {
+                      backgroundColor: showText ? "#FF982E" : "transparent",
                     },
                     "&:hover": {
-                      backgroundColor: "transparent",
+                      backgroundColor: showText ? "#FF982E" : "unset",
+                      borderRadius: 24,
                       "& .MuiListItemIcon-root": {
-                        backgroundColor: "#FF982E",
+                        backgroundColor: showText ? "transparent" : "#FF982E",
                         color: "#fff",
+                      },
+                      "& .MuiListItemText-primary": {
+                        color: showText ? "#8e5a27ff" : "#FF982E",
                       },
                     },
                   }}
                 >
+                  {/* Icon */}
                   <ListItemIcon
                     sx={{
-                      borderRadius: "15px",
-                      backgroundColor: selected ? "#6b6661ff" : "transparent",
-                      color: selected ? "#fff" : "#000",
-                      mr: showText ? 2 : 0,
+                      borderRadius: "12px",
+                      backgroundColor: selected ? "#FF982E" : "#f0f2f5",
+                      color: selected ? "#fff" : "#555",
                       justifyContent: "center",
                       alignItems: "center",
-                      minHeight: 40,
-                      mb: showText ? 0 : "4px",
-                      textAlign: "center",
+                      minHeight: 32,
+                      minWidth: 44,
+                      mb: 2,
+                      transition: "all 0.3s ease",
+                      margin: showText ? "0 10px 0 0" : "0",
+                      "& .material-symbols-outlined": {
+                        fontSize: showText ? "22px" : "20px", // 👈 set icon size here
+                      },
                     }}
                   >
                     <span className="material-symbols-outlined">{icon}</span>
                   </ListItemIcon>
+
+                  {/* Text */}
                   <ListItemText
                     primary={label}
                     primaryTypographyProps={{
-                      fontSize: 12,
+                      fontSize: showText ? 13 : 12,
                       fontWeight: 600,
-                      color: selected ? "#000" : "#888",
-                      textAlign: "center",
+                      color: selected
+                        ? showText
+                          ? "#fff" // expanded + selected → white
+                          : "#FF982E" // collapsed + selected → orange
+                        : "#888", // default grey
+                      textAlign: showText ? "left" : "center",
                     }}
                   />
                 </ListItemButton>
@@ -226,33 +255,37 @@ export default function Sidebar({
                   px: showText ? 2 : 1,
                   height: showText ? 48 : 72,
                   borderRadius: 2,
+                  "&:hover": {
+                    backgroundColor: "transparent", // removes rgba(0,0,0,0.04)
+                  },
                 }}
               >
-                <ListItemIcon
+                {/* Circle Avatar */}
+                <Box
                   sx={{
-                    borderRadius: "50%", // 👈 circle shape
-                    width: 40, // 👈 fixed size
-                    height: 50,
+                    borderRadius: "50%", // perfect circle
+                    width: 40, // equal width & height
+                    height: 40,
                     mr: showText ? 2 : 0,
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "center",
                     fontWeight: 600,
-                    fontSize: 18, // 👈 increased font size
-                    color: "white",
-                    background: "#252830",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
+                    fontSize: 16,
+                    color: "#fff",
+                    backgroundColor: "#252830", // dark background
+                    textTransform: "uppercase", // always uppercase initial
+                    flexShrink: 0, // prevents shrinking
                   }}
                 >
-                  {user?.first_name?.charAt(0).toUpperCase() || "N"}
-                </ListItemIcon>
+                  {user?.first_name?.charAt(0) || "N"}
+                </Box>
 
+                {/* Username */}
                 <ListItemText
                   primary={user?.first_name || "Name"}
                   primaryTypographyProps={{
-                    fontSize: 16, // 👈 slightly bigger for better readability
+                    fontSize: 15,
                     fontWeight: 600,
                     color: "#333",
                   }}

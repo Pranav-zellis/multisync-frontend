@@ -73,16 +73,11 @@ export default function Shell({ children }: { children: React.ReactNode }) {
             href: "/super_admin_portal/tenants",
             icon: "groups",
           },
-          {
-            label: "User Management",
-            href: "/super_admin_portal/user_management",
-            icon: "groups",
-          },
-          {
-            label: "Settings",
-            href: "/super_admin_portal/settings",
-            icon: "settings",
-          },
+          // {
+          //   label: "Settings",
+          //   href: "/super_admin_portal/settings",
+          //   icon: "settings",
+          // },
         ]
       : [
           { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
@@ -111,7 +106,10 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const handleRelogin = () => {
     setSessionExpired(false);
     showLoader();
-    Cookies.remove("tenant");
+    Cookies.remove("tenant", {
+      path: "/", // same path
+      domain: ".zellis.io", // same domain
+    });
     window.location.href = "/";
   };
 

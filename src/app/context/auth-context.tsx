@@ -4,18 +4,24 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { useGlobalLoader } from "@/context/loader-context";
 
-// Define the AuthUser type
-export interface AuthUser {
+interface AuthUser {
   username: string;
+  first_name: string;
+  groups: string[];
   userPoolId: string;
-  customAttributes?: {
-    email?: string;
-    [key: string]: unknown;
+  customAttributes: {
+    email: string;
+    email_verified: string;
+    phone_number: string;
+    phone_number_verified: string;
+    name: string;
+    family_name: string;
+    "custom:inviter_name": string;
+    "custom:users_role": string;
+    sub: string;
   };
-  groups?: string[];
 }
 
-// AuthContext type
 type AuthContextType = {
   user: AuthUser | null;
   loading: boolean;
@@ -47,7 +53,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/me`,
-          { credentials: "include" }
+          {
+            credentials: "include",
+          }
         );
 
         if (res.ok) {
@@ -63,7 +71,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
 
     fetchUser();
-  }, [showLoader, hideLoader]);
+  }, [showLoader, hideLoader]); // <-- added here
 
   return (
     <AuthContext.Provider value={{ user, loading, setUser }}>

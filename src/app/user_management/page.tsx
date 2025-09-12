@@ -41,7 +41,7 @@ type SnackbarState = {
 
 export default function UserManagement() {
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth() as {
+  const { user } = useAuth() as {
     user: CustomUser | null;
     loading: boolean;
   };
@@ -55,8 +55,7 @@ export default function UserManagement() {
   const [totalCount, setTotalCount] = useState(0);
   const [tenant, setTenant] = useState<string | null>(null);
   const [tenant_name, setTenantName] = useState<string | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-
+  const [, setDialogOpen] = useState(false);
 
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
@@ -131,9 +130,9 @@ export default function UserManagement() {
         const result = await response.json();
         const data = result.data.findUsersByTenantSchemasPaginated;
 
-        const formattedUsers = data.users.map((u: any, index: number) => ({
-          id: index + pageNum * limit,
+        const formattedUsers = data.users.map((u: User, index: number) => ({
           ...u,
+          id: index + pageNum * limit,
         }));
 
         if (isMounted.current) {

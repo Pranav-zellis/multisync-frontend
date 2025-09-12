@@ -3,27 +3,24 @@
 import Link from "next/link";
 import { Box, Typography, Button } from "@mui/material";
 
-export default function NotFound() {
+export default function AdminNotFound() {
   return (
     <Box
       sx={{
-        height: "100vh",
-        textAlign: "center",
+        height: "70vh",
+        overflow: "hidden", // disables scrolling
         display: "flex",
         flexDirection: "column",
-        alignItems: "center",
         justifyContent: "center",
-        px: 2,
+        alignItems: "center",
+        textAlign: "center",
       }}
     >
-      <Typography variant="h1" fontWeight="bold" gutterBottom>
-        404
-      </Typography>
-      <Typography variant="h5" gutterBottom>
-        Page Not Found
+      <Typography variant="h3" fontWeight="bold" gutterBottom>
+        404 - Page Not Found
       </Typography>
       <Typography variant="body1" mb={3}>
-        Sorry, the page you are looking for does not exist.
+        The page you are looking for does not exist.
       </Typography>
       <Button
         variant="contained"

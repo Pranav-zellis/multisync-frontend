@@ -1,7 +1,13 @@
 "use client";
 
 import React from "react";
-import { Box, TextField, Button, Typography } from "@mui/material";
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  InputAdornment,
+} from "@mui/material";
 
 interface SuperUserToolbarProps {
   search: string;
@@ -43,8 +49,29 @@ export default function SuperUserToolbar({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             fullWidth
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <span className="material-symbols-outlined">search</span>
+                </InputAdornment>
+              ),
+            }}
             sx={{
-              maxWidth: { xs: "100%", sm: "200px" },
+              borderRadius: "50px", // fully rounded
+              backgroundColor: "#f1f3f4", // light gray like Gmail
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "50px",
+                paddingRight: "8px",
+                "& fieldset": {
+                  border: "none",
+                },
+                "&:hover fieldset": {
+                  border: "none",
+                },
+                "&.Mui-focused fieldset": {
+                  border: "none",
+                },
+              },
             }}
           />
 
@@ -52,11 +79,19 @@ export default function SuperUserToolbar({
             variant="contained"
             onClick={onCreateClick}
             sx={{
+              borderRadius: "20px", // rounded
+              textTransform: "none", // preserve normal casing
+              fontWeight: 500,
+              color: "#fff",
+              px: 5, // horizontal padding
+              py: 1, // vertical padding
+              boxShadow:
+                "0 1px 3px rgba(60,64,67,0.3), 0 4px 8px rgba(60,64,67,0.15)",
+              "&:hover": {
+                boxShadow:
+                  "0 2px 4px rgba(60,64,67,0.3), 0 6px 12px rgba(60,64,67,0.2)",
+              },
               whiteSpace: "nowrap",
-              fontSize: { xs: "0.75rem", sm: "0.875rem" },
-              px: { xs: 1.5, sm: 2.5 },
-              py: { xs: 0.75, sm: 1 },
-              width: { xs: "100%", sm: "auto" },
             }}
           >
             + Create Super Admin

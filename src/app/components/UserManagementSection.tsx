@@ -17,7 +17,7 @@ interface UserManagementTableProps {
   onUserEdit: (user: User) => void;
   onUserDelete: (user: User) => void;
   onCreateUser: () => void;
-  superUserDialogOpen?: boolean; 
+  superUserDialogOpen?: boolean;
   createUsers?: boolean;
   superadmin?: boolean;
   UserDialogOpen?: boolean;
@@ -75,7 +75,9 @@ export default function UserManagementTable({
               onClick={() =>
                 onDialogOpen({
                   ...params.row,
-                  tenant_ids: (params.row as any).tenant_ids ?? [],
+                  tenant_ids:
+                    (params.row as User & { tenant_ids?: string[] })
+                      .tenant_ids ?? [],
                 })
               }
               showInMenu

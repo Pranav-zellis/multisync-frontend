@@ -1,4 +1,3 @@
-// components/UserSuggestionPrompt.tsx
 "use client";
 
 import React from "react";
@@ -35,6 +34,15 @@ export default function UserSuggestionPrompt({
   const isSuperAdmin = user.user_type === "Super Admin";
   const isFromAdminUsers = pathname.includes("admin_users");
   const theme = useTheme();
+
+  const renderUserIdentity = () => {
+    if (source === "email") {
+      return <>email ID &quot;<b>{user.email}</b>&quot;</>;
+    } else {
+      return <>username &quot;<b>{user.username}</b>&quot;</>;
+    }
+  };
+
   return (
     <Paper
       sx={{
@@ -48,23 +56,15 @@ export default function UserSuggestionPrompt({
         <Typography variant="subtitle1" gutterBottom>
           {!isFromAdminUsers ? (
             <>
-              A user with{" "}
-              {source === "email"
-                ? `email ID "${user.email}"`
-                : `username "${user.username}"`}{" "}
-              already exists in our system under the following tenant(s):{" "}
-              <strong>{user.tenant_names}</strong>. Please click "YES" if you
+              A user with {renderUserIdentity()} already exists in our system under the following tenant(s):{" "}
+              <strong>{user.tenant_names}</strong>. Please click &quot;YES&quot; if you
               wish to add the existing user as an{" "}
               <strong>{user.user_type}</strong> to the tenant{" "}
               <strong>{tenant_name}</strong>.
             </>
           ) : (
             <>
-              A user with{" "}
-              {source === "email"
-                ? `email ID "${user.email}"`
-                : `username "${user.username}"`}{" "}
-              already exists as a tenant <strong>{user.user_type}</strong>.
+              A user with {renderUserIdentity()} already exists as a tenant <strong>{user.user_type}</strong>.
               Promoting a tenant-level user to super admin is not allowed.
             </>
           )}
@@ -75,7 +75,7 @@ export default function UserSuggestionPrompt({
         <b>
           {user.first_name} {user.last_name}
         </b>{" "}
-        – {user.email} – {user.phone_number} - {user.user_type}
+        – {user.email} – {user.phone_number} – {user.user_type}
       </Typography>
 
       {isSuperAdmin && (
@@ -87,32 +87,23 @@ export default function UserSuggestionPrompt({
       <Stack direction="row" spacing={2}>
         {user.user_type !== "Super Admin" &&
         !pathname.includes("admin_users") ? (
-          <>
-            <Button
-              variant="outlined"
-              onClick={onAccept}
-              sx={{
-                borderColor: theme.palette.success.main,
-                color: theme.palette.success.main,
-                backgroundColor: "rgba(76, 175, 80, 0.15)", // light green translucent
-                backdropFilter: "blur(6px)",
-                transition: "all 0.3s ease",
-                "&:hover": {
-                  backgroundColor: "rgba(76, 175, 80, 0.3)",
-                  borderColor: theme.palette.success.dark,
-                },
-              }}
-            >
-              Yes
-            </Button>
-            {/* <Button
-                variant="contained"
-                color="error"
-                onClick={handleRejectSuggestion}
-              >
-                No
-              </Button> */}
-          </>
+          <Button
+            variant="outlined"
+            onClick={onAccept}
+            sx={{
+              borderColor: theme.palette.success.main,
+              color: theme.palette.success.main,
+              backgroundColor: "rgba(76, 175, 80, 0.15)",
+              backdropFilter: "blur(6px)",
+              transition: "all 0.3s ease",
+              "&:hover": {
+                backgroundColor: "rgba(76, 175, 80, 0.3)",
+                borderColor: theme.palette.success.dark,
+              },
+            }}
+          >
+            Yes
+          </Button>
         ) : (
           <Button
             variant="outlined"
@@ -120,7 +111,7 @@ export default function UserSuggestionPrompt({
             sx={{
               borderColor: theme.palette.error.main,
               color: theme.palette.error.main,
-              backgroundColor: "rgba(244, 67, 54, 0.15)", // light red translucent
+              backgroundColor: "rgba(244, 67, 54, 0.15)",
               backdropFilter: "blur(6px)",
               transition: "all 0.3s ease",
               "&:hover": {

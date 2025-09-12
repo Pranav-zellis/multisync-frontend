@@ -26,7 +26,7 @@ export interface UserSuggestion {
   tenant_names: string; // Comma-separated tenant names or a string summary
 }
 
-interface FormType {
+export interface FormType {
   username?: string;
   email?: string;
   first_name?: string;
@@ -47,8 +47,10 @@ interface Props {
   setIsUserExists?: (exists: boolean) => void; // optional callback to parent
 }
 
-export const supportedCountryCodes = ["+91", "+1", "+44", "+61", "+971"];
+// Supported country codes
+export const supportedCountryCodes = ["+61", "+91", "+1", "+44", "+971"];
 
+// Validation functions
 export const isValidUsername = (username: string) =>
   username.length <= 50 && /^[a-zA-Z0-9_]+$/.test(username);
 
@@ -60,6 +62,25 @@ export const isValidEmail = (email: string) =>
 
 export const isPhoneValid = (phone: string) => /^[0-9]{6,14}$/.test(phone);
 
+// Form type definition
+export interface FormType {
+  username?: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  countryCode: string;
+}
+
+// Props interface
+interface Props {
+  form: FormType; // Properly typed
+  setForm: Dispatch<SetStateAction<FormType>>; // Properly typed
+  error?: string | null;
+  isEditMode?: boolean;
+}
+
+// Component
 export default function SuperUsersForm({
   form,
   setForm,
@@ -206,8 +227,8 @@ export default function SuperUsersForm({
         onChange={(e) =>
           setForm((prev) => ({ ...prev, username: e.target.value }))
         }
-        onBlur={handleUsernameBlur}
         error={!!form.username && !isValidUsername(form.username)}
+        onBlur={handleUsernameBlur}
         helperText={
           form.username && !isValidUsername(form.username)
             ? "Up to 50 characters. Letters, numbers, underscores only."

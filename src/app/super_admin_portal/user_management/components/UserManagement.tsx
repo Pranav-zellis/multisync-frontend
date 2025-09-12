@@ -6,7 +6,7 @@ import SuperUserDialog from "@/components/SuperUserDialog";
 import GlobalSnackbar from "@/components/GlobalSnackbar";
 import { useAuth } from "@/context/auth-context";
 import { useIsMounted } from "@/hooks/useIsMounted";
-import { User } from "@/types/User"; 
+import { User } from "@/types/User";
 import {
   Dialog,
   DialogTitle,
@@ -125,9 +125,9 @@ export default function UserManagement() {
         const result = await response.json();
         const data = result.data.findUsersByUsersPaginated;
 
-        const formattedUsers = data.users.map((u: any, index: number) => ({
-          id: index + pageNum * limit,
+        const formattedUsers = data.users.map((u: User, index: number) => ({
           ...u,
+          id: index + pageNum * limit,
         }));
 
         if (isMounted.current) {

@@ -61,7 +61,6 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [confirmInput, setConfirmInput] = useState("");
 
-  // Tenant edit form states
   const [currentTenantName, setCurrentTenantName] = useState(
     tenant.tenant_name
   );
@@ -80,10 +79,14 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
     { tenant_name: string; schema: string }[]
   >([]);
 
-  const [snackbar, setSnackbar] = useState({
+  const [, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error";
+  }>({
     open: false,
     message: "",
-    severity: "success" as "success" | "error" | "info" | "warning",
+    severity: "success",
   });
 
   const [errors, setErrors] = useState({ tenantName: "", tenantStatus: "" });
@@ -97,68 +100,67 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   // Fetch users API call
-  const fetchUsers = async (
-    tenantSchema: string,
-    pageNum: number,
-    limit: number
-  ) => {
-    setLoading(true);
-    try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            query: `
-            query GetPaginatedUsers($tenantSchemas: [String!]!, $page: Int, $limit: Int) {
-              findUsersByTenantSchemasPaginated(
-                tenantSchemas: $tenantSchemas,
-                page: $page,
-                limit: $limit
-              ) {
-                users {
-                  id
-                  username
-                  first_name
-                  last_name
-                  email
-                  phone_number
-                  user_type
-                  tenant_names
+  const fetchUsers = React.useCallback(
+    async (tenantSchema: string, pageNum: number, limit: number) => {
+      setLoading(true);
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              query: `
+              query GetPaginatedUsers($tenantSchemas: [String!]!, $page: Int, $limit: Int) {
+                findUsersByTenantSchemasPaginated(
+                  tenantSchemas: $tenantSchemas,
+                  page: $page,
+                  limit: $limit
+                ) {
+                  users {
+                    id
+                    username
+                    first_name
+                    last_name
+                    email
+                    phone_number
+                    user_type
+                    tenant_names
+                  }
+                  totalCount
+                  currentPage
+                  totalPages
                 }
-                totalCount
-                currentPage
-                totalPages
               }
-            }
-          `,
-            variables: {
-              tenantSchemas: [tenantSchema],
-              page: pageNum + 1, // backend expects 1-based page
-              limit,
-            },
-          }),
-        }
-      );
+            `,
+              variables: {
+                tenantSchemas: [tenantSchema],
+                page: pageNum + 1,
+                limit,
+              },
+            }),
+          }
+        );
 
-      const result = await response.json();
-      const data = result.data.findUsersByTenantSchemasPaginated;
+        const result = await response.json();
+        const data = result.data.findUsersByTenantSchemasPaginated;
 
-      const formattedUsers = data.users.map((u: any, index: number) => ({
-        id: index + pageNum * limit,
-        ...u,
-      }));
+        const formattedUsers = data.users.map((u: User, index: number) => ({
+          ...u,
+          id: index + pageNum * limit,
+        }));
 
-      setUsers(formattedUsers);
-      setTotalCount(data.totalCount);
-    } catch (err) {
-      console.error("Failed to fetch users:", err);
-      showSnackbar("Failed to load users", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
+        setUsers(formattedUsers);
+        setTotalCount(data.totalCount);
+      } catch (err) {
+        console.error("Failed to fetch users:", err);
+        showSnackbar("Failed to load users", "error");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [showSnackbar]
+  );
 
   useEffect(() => {
     async function fetchActiveTenants() {
@@ -196,7 +198,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
     if (dialogOpen && isEditing) {
       fetchUsers(tenant.schema, page, pageSize);
     }
-  }, [page, pageSize, dialogOpen, isEditing]);
+  }, [page, pageSize, dialogOpen, isEditing, fetchUsers, tenant.schema]);
 
   // Paging handlers
   const handlePageChange = (newPage: number) => setPage(newPage);
@@ -261,9 +263,26 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
 
     try {
       showLoader();
+
+      const slugify = (str: string) =>
+        str
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9\s-]/g, "") // remove invalid chars
+          .replace(/\s+/g, "-") // replace spaces with dashes
+          .replace(/-+/g, "-"); // collapse multiple dashes
+
+      const slugifyFirstWords = (str: string) => {
+        const words = str.trim().split(/\s+/);
+        return slugify(words.join(" "));
+      };
+
+      const slugifiedTenantName = currentTenantName
+        ? slugifyFirstWords(currentTenantName)
+        : "";
       await updateTenant({
         schema: tenant.schema,
-        tenant_name: currentTenantName,
+        tenant_name: slugifiedTenantName,
         tenant_status: selectedStatus,
       });
       showSnackbar("Tenant updated successfully", "success");
@@ -357,11 +376,11 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
         <MenuItem onClick={() => handleActionClick("tenantEdit")}>
           Edit
         </MenuItem>
-        <MenuItem onClick={() => handleActionClick("createAdmin")}>
-          Create New User
-        </MenuItem>
         <MenuItem onClick={() => handleActionClick("tenantDelete")}>
           Delete
+        </MenuItem>
+        <MenuItem onClick={() => handleActionClick("createAdmin")}>
+          Create New Admin User
         </MenuItem>
       </Menu>
 

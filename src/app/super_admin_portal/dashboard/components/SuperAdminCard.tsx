@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Card, Typography, Chip, Box, Button } from "@mui/material";
-import SuperUserDialog from "../../../components/SuperUserDialog";
+import SuperUserDialog from "@/components/SuperUserDialog";
+import { useAuth } from "@/context/auth-context";
 
 type SuperAdmin = {
   id: string;
@@ -13,6 +14,7 @@ type SuperAdmin = {
   phone_number: string;
 };
 
+
 export default function SuperAdminCard() {
   const [superAdmins, setSuperAdmins] = useState<SuperAdmin[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -20,6 +22,10 @@ export default function SuperAdminCard() {
   const [isEditing, setIsEditing] = useState(false);
   const isMounted = useRef(true);
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+  const { user } = useAuth();
+
+  console.log("user 12");
+  console.log(user);
 
   // Fetch Super Admins
   const fetchSuperAdmins = useCallback(async () => {
@@ -83,6 +89,7 @@ export default function SuperAdminCard() {
           boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
           backgroundColor: "#f7f9ff",
           p: 3,
+          minWidth: "20rem",
         }}
       >
         <Typography variant="h6" align="center" fontWeight={600} gutterBottom>
@@ -143,7 +150,7 @@ export default function SuperAdminCard() {
       <SuperUserDialog
         open={dialogOpen}
         user={selectedUser}
-        inviterName={selectedUser?.username || ""}
+        inviterName={user?.username || ""}
         isEditing={isEditing}
         usersRole="Super Admin"
         groups={["*"]}

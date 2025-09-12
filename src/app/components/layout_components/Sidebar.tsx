@@ -11,18 +11,39 @@ import {
   ListItemText,
   Menu,
   MenuItem,
+  Typography,
+  Avatar,
+  Button,
+  Divider,
 } from "@mui/material";
 import { usePathname, useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 
-// Define User type
-interface User {
-  username?: string;
+type CustomAttributes = {
+  email?: string;
+  email_verified?: string;
+  phone_number?: string;
+  phone_number_verified?: string;
+  name?: string;
+  family_name?: string;
+  "custom:inviter_name"?: string;
+  "custom:users_role"?: string;
+  sub?: string;
+  [key: string]: unknown; // allow future keys
+};
+
+
+type SidebarUser = {
+  first_name?: string;
   groups?: string[];
-}
+  email?: string;
+  username?: string;
+  customAttributes?: CustomAttributes; // 👈 add this
+  [key: string]: unknown;
+};
 
 interface SidebarProps {
-  user: User | null;
+  user: SidebarUser | null;
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   mobileOpen: boolean;
@@ -48,6 +69,10 @@ export default function Sidebar({
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const openProfileMenu = Boolean(anchorEl);
 
+  const handleClick = (event: React.MouseEvent<HTMLElement>) =>
+    setAnchorEl(event.currentTarget);
+  const handleClose = () => setAnchorEl(null);
+
   const drawerWidthCollapsed = 92;
   const drawerWidthExpanded = 240;
 
@@ -65,16 +90,8 @@ export default function Sidebar({
       method: "GET",
       credentials: "include",
     });
-    Cookies.remove("tenant");
+    Cookies.remove("tenant", { path: "/" });
     router.push("/");
-  };
-
-  const handleProfileClick = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
   };
 
   return (
@@ -105,11 +122,10 @@ export default function Sidebar({
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          backgroundColor: "#f5f9ff",
           py: 2,
         }}
       >
-        {/* Navigation Items */}
+        {/* Navigation Section */}
         <Box>
           {/* Sidebar Toggle */}
           <Box
@@ -134,7 +150,8 @@ export default function Sidebar({
             )}
           </Box>
 
-          <List sx={{ pt: "30px" }}>
+          {/* Navigation Items */}
+          <List>
             {navItems.map(({ label, href, icon }) => {
               const selected = pathname === href;
               const showText = sidebarOpen || isMobile;
@@ -144,52 +161,80 @@ export default function Sidebar({
                   selected={selected}
                   onClick={() => handleNavigate(href)}
                   sx={{
-                    my: 1,
-                    mx: 2,
+                    display: "flex",
                     flexDirection: showText ? "row" : "column",
                     justifyContent: "center",
                     alignItems: "center",
                     px: showText ? 2 : 1,
-                    height: showText ? 48 : 72,
-                    borderRadius: 2,
-                    "&.Mui-selected": {
+                    height: showText ? 48 : 60,
+                    borderRadius: showText && selected ? 24 : 2,
+                    margin: showText ? "8px 15px 8px 13px" : "7px 0 7px 0",
+                    transition: "all 0.3s ease",
+                    "& .MuiListItemIcon-root": {
                       backgroundColor: "transparent",
+                      borderRadius: 4,
+                      padding: 0,
+                    },
+                    "&.Mui-selected": {
+                      backgroundColor: showText ? "#FF982E" : "transparent",
+                      borderRadius: 24,
                       "& .MuiListItemIcon-root": {
                         backgroundColor: "#FF982E",
                         color: "#fff",
                       },
+                      "& .MuiListItemText-primary": {
+                        color: showText ? "#fff" : "#FF982E",
+                      },
+                    },
+                    "&.Mui-selected:hover": {
+                      backgroundColor: showText ? "#FF982E" : "transparent",
                     },
                     "&:hover": {
-                      backgroundColor: "transparent",
+                      backgroundColor: showText ? "#FF982E" : "unset",
+                      borderRadius: 24,
                       "& .MuiListItemIcon-root": {
-                        backgroundColor: "#FF982E",
+                        backgroundColor: showText ? "transparent" : "#FF982E",
                         color: "#fff",
+                      },
+                      "& .MuiListItemText-primary": {
+                        color: showText ? "#8e5a27ff" : "#FF982E",
                       },
                     },
                   }}
                 >
+                  {/* Icon */}
                   <ListItemIcon
                     sx={{
-                      borderRadius: "15px",
-                      backgroundColor: selected ? "#6b6661ff" : "transparent",
-                      color: selected ? "#fff" : "#000",
-                      mr: showText ? 2 : 0,
+                      borderRadius: "12px",
+                      backgroundColor: selected ? "#FF982E" : "#f0f2f5",
+                      color: selected ? "#fff" : "#555",
                       justifyContent: "center",
                       alignItems: "center",
-                      minHeight: 40,
-                      mb: showText ? 0 : "4px",
-                      textAlign: "center",
+                      minHeight: 32,
+                      minWidth: 44,
+                      mb: 2,
+                      transition: "all 0.3s ease",
+                      margin: showText ? "0 10px 0 0" : "0",
+                      "& .material-symbols-outlined": {
+                        fontSize: showText ? "22px" : "20px", // 👈 set icon size here
+                      },
                     }}
                   >
                     <span className="material-symbols-outlined">{icon}</span>
                   </ListItemIcon>
+
+                  {/* Text */}
                   <ListItemText
                     primary={label}
                     primaryTypographyProps={{
-                      fontSize: 12,
+                      fontSize: showText ? 13 : 12,
                       fontWeight: 600,
-                      color: selected ? "#000" : "#888",
-                      textAlign: "center",
+                      color: selected
+                        ? showText
+                          ? "#fff" // expanded + selected → white
+                          : "#FF982E" // collapsed + selected → orange
+                        : "#888", // default grey
+                      textAlign: showText ? "left" : "center",
                     }}
                   />
                 </ListItemButton>
@@ -198,125 +243,131 @@ export default function Sidebar({
           </List>
         </Box>
 
-        {/* Profile Section (Floating Menu) */}
+        {/* Profile Section */}
         <Box
           sx={{
             p: 1,
             display: "flex",
-            justifyContent: "center",
             alignItems: "center",
+            justifyContent: "center",
             width: "100%",
+            flexDirection: !sidebarOpen && !isMobile ? "column" : "row", // 🔥 stack on desktop collapsed
+            gap: !sidebarOpen && !isMobile ? 0.5 : 0, // spacing when stacked
           }}
         >
-          {(() => {
-            const showText = sidebarOpen || isMobile;
+          {/* Avatar */}
+          <IconButton onClick={handleClick} sx={{ p: 0 }}>
+            <Avatar
+              sx={{
+                bgcolor: "#252830",
+                width: 40,
+                height: 40,
+                fontWeight: 600,
+                fontSize: 16,
+                textTransform: "uppercase",
+              }}
+            >
+              {user?.first_name?.charAt(0) || "N"}
+            </Avatar>
+          </IconButton>
 
-            return (
-              <ListItemButton
-                onClick={handleProfileClick}
-                sx={{
-                  flexDirection: showText ? "row" : "column",
-                  justifyContent: "center",
-                  alignItems: "center",
-                  px: showText ? 2 : 1,
-                  height: showText ? 48 : 72,
-                  borderRadius: 2,
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    borderRadius: "15px",
-                    mr: showText ? 2 : 0,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    minHeight: 40,
-                    mb: showText ? 0 : "4px",
-                    textAlign: "center",
-                    fontWeight: 600,
-                    fontSize: 14,
-                    color: "white",
-                    background: "#252830",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    maxWidth: "120px",
-                  }}
-                >
-                  {user?.username?.charAt(0).toUpperCase() || "N"}
-                </ListItemIcon>
+          {/* Username */}
+          <Typography
+            onClick={handleClick}
+            sx={{
+              ml: sidebarOpen || isMobile ? 1 : 0, // inline spacing if row
+              mt: !sidebarOpen && !isMobile ? 0.5 : 0, // little gap below avatar if stacked
+              fontWeight: 600,
+              fontSize: 15,
+              color: "#333",
+              textAlign: "center", // center align when stacked
+              cursor: "pointer", // 👈 makes it clickable
+            }}
+          >
+            {user?.first_name || "Name"}
+          </Typography>
 
-                <ListItemText
-                  primary={user?.username || "Name"}
-                  primaryTypographyProps={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color: "#333",
-                  }}
-                />
-              </ListItemButton>
-            );
-          })()}
-
-          {/* Floating Menu */}
+          {/* Dropdown Menu */}
           <Menu
             anchorEl={anchorEl}
             open={openProfileMenu}
-            onClose={handleMenuClose}
-            anchorOrigin={{
-              vertical: "top",
-              horizontal: "right",
-            }}
-            transformOrigin={{
-              vertical: "bottom",
-              horizontal: "right",
-            }}
+            onClose={handleClose}
+            anchorOrigin={{ vertical: "top", horizontal: "right" }}
+            transformOrigin={{ vertical: "bottom", horizontal: "right" }}
             PaperProps={{
-              elevation: 3,
-              sx: { minWidth: 180 },
+              elevation: 8,
+              sx: {
+                minWidth: 280,
+                borderRadius: 3,
+                overflow: "visible",
+                p: 1,
+              },
             }}
           >
-            <MenuItem onClick={() => alert("Profile")}>
-              <span
-                className="material-symbols-outlined"
-                style={{ marginRight: 8 }}
+            {/* Profile Top Section */}
+            <Box sx={{ textAlign: "center", px: 2, pb: 2 }}>
+              <Avatar
+                sx={{
+                  bgcolor: "#252830",
+                  width: 64,
+                  height: 64,
+                  mx: "auto",
+                  fontSize: 22,
+                  fontWeight: 600,
+                }}
               >
-                account_circle
-              </span>
-              Profile
-            </MenuItem>
+                {user?.first_name?.charAt(0) || "N"}
+              </Avatar>
+              <Typography sx={{ mt: 1, fontWeight: 600, fontSize: 16 }}>
+                {user?.first_name || "Name"}
+              </Typography>
+              <Typography sx={{ fontSize: 14, color: "text.secondary" }}>
+                {user?.customAttributes?.email ?? "user@example.com"}
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                sx={{ mt: 1, borderRadius: 5, textTransform: "none" }}
+                onClick={() => {
+                  handleClose();
+                  alert("Manage Account clicked");
+                }}
+              >
+                Manage your Account
+              </Button>
+            </Box>
 
-            {(user?.groups?.length ?? 0) > 1 || user?.groups?.includes("*") ? (
+            <Divider />
+
+            {/* Change Tenant Option */}
+            {((user?.groups?.length ?? 0) > 1 ||
+              user?.groups?.includes("*")) && (
               <MenuItem
                 onClick={() => {
-                  handleMenuClose();
+                  handleClose();
                   showLoader();
-                  Cookies.remove("tenant");
+                  Cookies.remove("tenant", { path: "/" });
                   router.push("/tenants");
                 }}
               >
-                <span
-                  className="material-symbols-outlined"
-                  style={{ marginRight: 8 }}
-                >
-                  change_circle
-                </span>
+                <ListItemIcon>
+                  <span className="material-symbols-outlined">swap_calls</span>
+                </ListItemIcon>
                 Change Tenant
               </MenuItem>
-            ) : null}
+            )}
 
+            {/* Logout */}
             <MenuItem
               onClick={() => {
-                handleMenuClose();
-                handleLogout();
+                handleClose();
+                handleLogout?.();
               }}
               sx={{ color: "error.main" }}
             >
-              <span
-                className="material-symbols-outlined"
-                style={{ marginRight: 8 }}
-              >
-                logout
-              </span>
+              <ListItemIcon>
+                <span className="material-symbols-outlined">logout</span>
+              </ListItemIcon>
               Logout
             </MenuItem>
           </Menu>

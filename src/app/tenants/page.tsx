@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import Box from "@mui/material/Box";  // ✅ Correct import
+import Box from "@mui/material/Box"; // ✅ Correct import
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
 import { useGlobalLoader } from "@/context/loader-context";
@@ -63,17 +63,26 @@ export default function AccountsPage() {
           role: String(user?.customAttributes?.["custom:users_role"] ?? ""),
         };
 
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ query: GET_TENANTS_SCHEMA, variables: { user: userInput } }),
-        });
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              query: GET_TENANTS_SCHEMA,
+              variables: { user: userInput },
+            }),
+          }
+        );
 
         const json = await res.json();
 
         if (!res.ok || json.errors) {
-          console.error("Error fetching tenants:", json.errors || res.statusText);
+          console.error(
+            "Error fetching tenants:",
+            json.errors || res.statusText
+          );
           setTenants([]);
         } else {
           setTenants(json.data.tenantsBySchemas || []);
@@ -90,23 +99,38 @@ export default function AccountsPage() {
     fetchTenants();
   }, [user, loading, hasFetched, router, showLoader, hideLoader]);
 
-  const handleAccountClick = (schema: string, status: string,name: string) => {
+  const handleAccountClick = (schema: string, status: string, name: string) => {
     if (status === "inactive" || status === "flagged_to_delete") return;
 
     showLoader();
-    Cookies.set("tenant", schema, { path: "/", sameSite: "Lax" });
-    Cookies.set("tenant_name", name, { path: "/", sameSite: "Lax" });
+
+    const cookieOptions = {
+      path: "/",
+      domain: ".zellis.io", // ✅ cookie available on all subdomains
+      sameSite: "lax" as const, // ✅ type-safe
+    };
+
+    // Update if exists, otherwise create
+    if (Cookies.get("tenant") !== schema) {
+      Cookies.set("tenant", schema, cookieOptions);
+    }
+
+    if (Cookies.get("tenant_name") !== name) {
+      Cookies.set("tenant_name", name, cookieOptions);
+    }
+
     router.push("/dashboard");
 
     setTimeout(() => {
       hideLoader();
     }, 800);
   };
-
   return (
     <Box>
       <AccountsHeader
-        showAdmin={user?.customAttributes?.["custom:users_role"] === "Super Admin"}
+        showAdmin={
+          user?.customAttributes?.["custom:users_role"] === "Super Admin"
+        }
       />
 
       {tenants.length === 0 ? (
@@ -119,7 +143,13 @@ export default function AccountsPage() {
                 <TenantCard
                   group={tenant.tenant_name}
                   status={tenant.tenant_status}
-                  onClick={() => handleAccountClick(tenant.schema, tenant.tenant_status,tenant.tenant_name)}
+                  onClick={() =>
+                    handleAccountClick(
+                      tenant.schema,
+                      tenant.tenant_status,
+                      tenant.tenant_name
+                    )
+                  }
                 />
               </Box>
             </Grid>

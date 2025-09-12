@@ -21,12 +21,15 @@ export default function AccountsHeader({ showAdmin }: AccountsHeaderProps) {
   const handleLogout = async () => {
     try {
       showLoader();
-      
+
       await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/logout`, {
         method: "GET",
         credentials: "include",
       });
-      Cookies.remove("tenant");
+      Cookies.remove("tenant", {
+        path: "/", // same path
+        domain: ".zellis.io", // same domain
+      });
       router.push("/");
     } catch (error) {
       console.error("Logout failed", error);

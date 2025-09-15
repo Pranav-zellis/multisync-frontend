@@ -190,7 +190,6 @@ export default function TenantStatsCard() {
       <GlobalSnackbar
         open={snackbar.open}
         message={snackbar.message}
-        severity={snackbar.severity}
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
       />
 

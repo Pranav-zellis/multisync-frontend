@@ -32,7 +32,6 @@ type CustomAttributes = {
   [key: string]: unknown; // allow future keys
 };
 
-
 type SidebarUser = {
   first_name?: string;
   groups?: string[];
@@ -110,9 +109,9 @@ export default function Sidebar({
               : drawerWidthCollapsed,
           boxSizing: "border-box",
           backgroundColor: "#f5f9ff",
-          transition: "width 0.3s",
           borderRight: "none",
           overflowX: "hidden",
+          transition: "width 0.3s cubic-bezier(0.4, 0, 0.2, 1)", // 👈 Gmail-like easing
         },
       }}
     >
@@ -123,6 +122,7 @@ export default function Sidebar({
           flexDirection: "column",
           justifyContent: "space-between",
           py: 2,
+          transition: "all 0.3s ease-in-out", // smooth container transition
         }}
       >
         {/* Navigation Section */}
@@ -136,6 +136,7 @@ export default function Sidebar({
                 sidebarOpen || isMobile ? "space-between" : "center",
               px: 2,
               mb: 2,
+              transition: "all 0.3s ease-in-out", // smooth movement
             }}
           >
             {!isMobile && (
@@ -175,6 +176,10 @@ export default function Sidebar({
                       borderRadius: 4,
                       padding: 0,
                     },
+                    "& .MuiListItemText-root": {
+                      opacity: showText ? 1 : 1, // 👈 fade text
+                      transition: "opacity 0.25s ease-in-out",
+                    },
                     "&.Mui-selected": {
                       backgroundColor: showText ? "#FF982E" : "transparent",
                       borderRadius: 24,
@@ -212,11 +217,10 @@ export default function Sidebar({
                       alignItems: "center",
                       minHeight: 32,
                       minWidth: 44,
-                      mb: 2,
-                      transition: "all 0.3s ease",
-                      margin: showText ? "0 10px 0 0" : "0",
+                      transition: "all 0.3s ease-in-out", // smooth resize
                       "& .material-symbols-outlined": {
-                        fontSize: showText ? "22px" : "20px", // 👈 set icon size here
+                        fontSize: showText ? "22px" : "20px",
+                        transition: "font-size 0.25s ease-in-out",
                       },
                     }}
                   >

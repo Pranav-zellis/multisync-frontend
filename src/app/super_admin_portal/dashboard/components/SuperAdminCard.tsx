@@ -24,8 +24,8 @@ export default function SuperAdminCard() {
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const { user } = useAuth();
 
-  console.log("user 12");
-  console.log(user);
+  // console.log("user 12");
+  // console.log(user);
 
   // Fetch Super Admins
   const fetchSuperAdmins = useCallback(async () => {

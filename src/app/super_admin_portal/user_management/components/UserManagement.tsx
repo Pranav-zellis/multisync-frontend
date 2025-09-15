@@ -17,22 +17,16 @@ import {
   Checkbox,
   FormControlLabel,
   FormGroup,
+  Slide,
 } from "@mui/material";
+import { TransitionProps } from "@mui/material/transitions";
 import { useGlobalLoader } from "@/context/loader-context";
+import SuperUserDeleteDialog from "@/super_admin_portal/admin_users/components/SuperUserDeleteDialog";
 
-// src/types/User.ts
-// src/types/User.ts
-// export interface User {
-//   id: number;
-//   username: string;
-//   first_name: string;
-//   last_name: string;
-//   email: string;
-//   phone_number: string;
-//   user_type: string;
-//   tenant_names?: string[]; // ✅ consistent
-//   real_id: number;
-// }
+// Slide transition (like Gmail dialogs)
+const Transition = (
+  props: TransitionProps & { children: React.ReactElement }
+) => <Slide direction="up" {...props} />;
 
 type CustomUser = {
   username: string;
@@ -59,19 +53,24 @@ export default function UserManagement() {
   };
 
   const { showLoader, hideLoader } = useGlobalLoader();
-
-  const [UserDialogOpen, setUserDialogOpen] = useState(false);
   const isMounted = useIsMounted();
-  const [tenant] = useState<string | null>(null);
+
   const [users, setUsers] = useState<User[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
+
+  const [superUserDialogOpen, setSuperUserDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+  const [userTenantDialogOpen, setUserTenantDialogOpen] = useState(false);
   const [tenants, setTenants] = useState<
     { schema: string; tenant_name: string }[]
   >([]);
   const [selectedTenants, setSelectedTenants] = useState<string[]>([]);
+
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
@@ -86,9 +85,7 @@ export default function UserManagement() {
     []
   );
 
-  const [superUserDialogOpen, setSuperUserDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-
+  // === Fetch Users ===
   const fetchUsers = useCallback(
     async (pageNum: number, limit: number) => {
       setLoading(true);
@@ -136,13 +133,9 @@ export default function UserManagement() {
         }
       } catch (err) {
         console.error("Error fetching users:", err);
-        if (isMounted.current) {
-          showSnackbar("Failed to load users", "error");
-        }
+        if (isMounted.current) showSnackbar("Failed to load users", "error");
       } finally {
-        if (isMounted.current) {
-          setLoading(false);
-        }
+        if (isMounted.current) setLoading(false);
       }
     },
     [isMounted, showSnackbar]
@@ -150,14 +143,16 @@ export default function UserManagement() {
 
   useEffect(() => {
     fetchUsers(page, pageSize);
-  }, [tenant, page, pageSize, fetchUsers]);
+  }, [page, pageSize, fetchUsers]);
 
+  // === Pagination Handlers ===
   const onPageChange = (newPage: number) => setPage(newPage);
   const onPageSizeChange = (newSize: number) => {
     setPageSize(newSize);
     setPage(0);
   };
 
+  // === CRUD Handlers ===
   const onCreateUser = () => {
     setSelectedUser(null);
     setSuperUserDialogOpen(true);
@@ -168,16 +163,66 @@ export default function UserManagement() {
     setSuperUserDialogOpen(true);
   };
 
-  const onUserDelete = (user: User) => {
-    console.log("Delete user:", user);
-    // TODO: Add delete logic
+  const handleConfirmDeleteUser = (user: User) => {
+    if (!user?.username) {
+      showSnackbar("Invalid user selected", "error");
+      return;
+    }
+    setSelectedUser(user);
+    setDeleteDialogOpen(true);
   };
 
-  const onDialogOpen = async (user: User & { tenant_ids: string[] }) => {
-    setSelectedUser(user); // Set the selected user
+  const handleDeleteUser = async () => {
+    if (!selectedUser?.username) {
+      showSnackbar("Invalid user selected", "error");
+      return;
+    }
+
+    showLoader();
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            query: `
+              mutation DeleteUser($input: DeleteUserInput!) {
+                deleteUser(input: $input)
+              }
+            `,
+            variables: { input: { username: selectedUser.username } },
+          }),
+        }
+      );
+
+      const result = await res.json();
+
+      if (result.errors)
+        throw new Error(result.errors[0]?.message || "Failed to delete user");
+
+      if (result.data?.deleteUser) {
+        showSnackbar("User deleted successfully", "success");
+        fetchUsers(page, pageSize);
+      } else {
+        showSnackbar("Failed to delete user", "error");
+      }
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      showSnackbar("Error deleting user", "error");
+    } finally {
+      hideLoader();
+      setDeleteDialogOpen(false);
+      setSelectedUser(null);
+    }
+  };
+
+  // === Tenant Handlers ===
+  const onTenantDialogOpen = async (user: User & { tenant_ids: string[] }) => {
+    setSelectedUser(user);
 
     try {
-      // Fetch tenants
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`,
         {
@@ -185,13 +230,13 @@ export default function UserManagement() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             query: `
-            query {
-              getAllActiveTenants {
-                schema
-                tenant_name
+              query {
+                getAllActiveTenants {
+                  schema
+                  tenant_name
+                }
               }
-            }
-          `,
+            `,
           }),
         }
       );
@@ -199,73 +244,63 @@ export default function UserManagement() {
       const result = await response.json();
       const allTenants = result.data?.getAllActiveTenants || [];
 
-      // Set all tenants in state
       if (isMounted.current) {
         setTenants(allTenants);
-        // Filter tenant schemas that match user.tenant_ids
+
         const matchedSchemas = allTenants
           .filter((tenant: { schema: string }) =>
             user.tenant_ids.includes(tenant.schema)
           )
           .map((tenant: { schema: string }) => tenant.schema);
 
-        setSelectedTenants(matchedSchemas); // Pre-select matching tenant checkboxes
+        setSelectedTenants(matchedSchemas);
       }
     } catch (error) {
       console.error("Error fetching tenants:", error);
       showSnackbar("Failed to fetch tenants", "error");
     }
 
-    setUserDialogOpen(true); // Open the dialog
+    setUserTenantDialogOpen(true);
   };
 
   const handleSaveUserTenants = async () => {
-    if (!selectedUser) {
-      console.warn("No user selected");
-      return;
-    }
+    if (!selectedUser) return;
+
     showLoader();
     try {
-      // 2️⃣ Update user-tenant assignment
-      const updateResponse = await fetch(
+      const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             query: `
-            mutation UpdateTenantIds($id: Int!, $tenant_ids: [String!]!) {
-              updateUserTenantIds(id: $id, tenant_ids: $tenant_ids) {
-                id
-                username
-                tenant_ids
+              mutation UpdateTenantIds($id: Int!, $tenant_ids: [String!]!) {
+                updateUserTenantIds(id: $id, tenant_ids: $tenant_ids) {
+                  id
+                  username
+                  tenant_ids
+                }
               }
-            }
-          `,
+            `,
             variables: {
-              id: selectedUser.real_id, // DB id of the user
-              tenant_ids: selectedTenants, // array of tenant schema strings
+              id: selectedUser.real_id,
+              tenant_ids: selectedTenants,
             },
           }),
         }
       );
 
-      const updateResult = await updateResponse.json();
+      const result = await response.json();
 
-      if (updateResult.errors) {
-        hideLoader();
-        throw new Error(updateResult.errors[0]?.message || "Mutation failed");
-      }
+      if (result.errors)
+        throw new Error(result.errors[0]?.message || "Mutation failed");
 
-      fetchUsers(page, pageSize);
-      console.log("Update success:", updateResult.data);
       showSnackbar("User tenants updated successfully", "success");
-
-      // Close dialog after success
-      setUserDialogOpen(false);
-      hideLoader();
+      fetchUsers(page, pageSize);
+      setUserTenantDialogOpen(false);
+      setSelectedUser(null);
     } catch (error) {
-      hideLoader();
       console.error("Error updating tenants:", error);
       showSnackbar("Failed to update user tenants", "error");
     } finally {
@@ -275,13 +310,14 @@ export default function UserManagement() {
 
   return (
     <>
+      {/* Snackbar */}
       <GlobalSnackbar
         open={snackbar.open}
         message={snackbar.message}
-        severity={snackbar.severity}
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
       />
 
+      {/* Main Section */}
       <UserManagementSection
         users={users}
         totalCount={totalCount}
@@ -291,20 +327,20 @@ export default function UserManagement() {
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
         onUserEdit={onUserEdit}
-        onUserDelete={onUserDelete}
+        onUserDelete={handleConfirmDeleteUser}
         onCreateUser={onCreateUser}
-        createUsers={true}
-        superadmin={true}
-        superUserDialogOpen={superUserDialogOpen}
-        onDialogOpen={onDialogOpen}
-        onDialogClose={() => setUserDialogOpen(false)}
+        createUsers
+        superadmin
+        onDialogOpen={onTenantDialogOpen}
+        onDialogClose={() => setUserTenantDialogOpen(false)}
       />
 
+      {/* Create/Edit User */}
       <SuperUserDialog
         open={superUserDialogOpen}
         user={selectedUser}
         inviterName={user?.username || ""}
-        title={selectedUser ? `Edit User` : `Create User`}
+        title={selectedUser ? "Edit User" : "Create User"}
         isEditing={!!selectedUser}
         usersRole={selectedUser?.user_type}
         button_title="User"
@@ -322,14 +358,25 @@ export default function UserManagement() {
         }}
       />
 
+      {/* Gmail-style Tenant Dialog */}
       <Dialog
-        open={UserDialogOpen}
-        onClose={() => setUserDialogOpen(false)}
+        open={userTenantDialogOpen}
+        onClose={() => setUserTenantDialogOpen(false)}
+        TransitionComponent={Transition}
+        keepMounted
         fullWidth
         maxWidth="sm"
+        PaperProps={{
+          elevation: 24,
+          sx: {
+            borderRadius: 3,
+            overflow: "hidden",
+            boxShadow: "0px 8px 30px rgba(0,0,0,0.35)",
+          },
+        }}
       >
         <DialogTitle>
-          {selectedUser ? "Edit Tenants" : "Create Tenants"}
+          {selectedUser ? "Edit Tenants" : "Assign Tenants"}
         </DialogTitle>
         <DialogContent dividers>
           <Typography variant="body1" color="textSecondary" gutterBottom>
@@ -357,7 +404,10 @@ export default function UserManagement() {
           </FormGroup>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setUserDialogOpen(false)} color="secondary">
+          <Button
+            onClick={() => setUserTenantDialogOpen(false)}
+            color="secondary"
+          >
             Cancel
           </Button>
           <Button
@@ -369,6 +419,20 @@ export default function UserManagement() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Delete User Dialog */}
+      {selectedUser && (
+        <SuperUserDeleteDialog
+          open={deleteDialogOpen}
+          onClose={() => {
+            setDeleteDialogOpen(false);
+            setSelectedUser(null);
+          }}
+          onConfirm={handleDeleteUser}
+          username={selectedUser.username}
+          userType={`${selectedUser.username} ${selectedUser.user_type}`}
+        />
+      )}
     </>
   );
 }

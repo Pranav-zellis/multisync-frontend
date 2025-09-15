@@ -9,6 +9,8 @@ import SuperUserDialog from "@/components/SuperUserDialog";
 import { useAuth } from "@/context/auth-context";
 import GlobalSnackbar from "@/components/GlobalSnackbar";
 import { useIsMounted } from "@/hooks/useIsMounted";
+import { useGlobalLoader } from "@/context/loader-context";
+import SuperUserDeleteDialog from "@/super_admin_portal/admin_users/components/SuperUserDeleteDialog";
 
 interface User {
   id: number;
@@ -46,6 +48,7 @@ export default function UserManagement() {
     loading: boolean;
   };
 
+  const { showLoader, hideLoader } = useGlobalLoader();
   const isMounted = useIsMounted();
 
   const [users, setUsers] = useState<User[]>([]);
@@ -55,7 +58,6 @@ export default function UserManagement() {
   const [totalCount, setTotalCount] = useState(0);
   const [tenant, setTenant] = useState<string | null>(null);
   const [tenant_name, setTenantName] = useState<string | null>(null);
-  const [, setDialogOpen] = useState(false);
 
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
@@ -71,6 +73,7 @@ export default function UserManagement() {
   );
 
   const [superUserDialogOpen, setSuperUserDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false); // ✅ for delete
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [editingSchema, setEditingSchema] = useState<string | null>(null);
   const [currentTenantName, setCurrentTenantName] = useState<string>("");
@@ -81,9 +84,9 @@ export default function UserManagement() {
 
     if (tenantCookie) {
       setTenant(tenantCookie);
-      setTenantName(tenantName);
+      setTenantName(tenantName || null);
     } else {
-      router.replace("/"); // redirect to homepage if no tenant
+      router.replace("/"); // redirect if no tenant
     }
   }, [router]);
 
@@ -153,7 +156,6 @@ export default function UserManagement() {
     [showSnackbar, isMounted]
   );
 
-  // 1. Fix the useEffect for fetching users when tenant, page, or pageSize changes:
   useEffect(() => {
     if (tenant) {
       fetchUsers(tenant, page, pageSize);
@@ -163,14 +165,14 @@ export default function UserManagement() {
   const onPageChange = (newPage: number) => setPage(newPage);
   const onPageSizeChange = (newSize: number) => {
     setPageSize(newSize);
-    setPage(0); // reset to first page
+    setPage(0);
   };
 
   const onCreateUser = () => {
     setSelectedUser(null);
     if (tenant) {
       setEditingSchema(tenant);
-      setCurrentTenantName(tenant_name!);
+      setCurrentTenantName(tenant_name || "");
       setSuperUserDialogOpen(true);
     }
   };
@@ -179,14 +181,66 @@ export default function UserManagement() {
     setSelectedUser(user);
     if (tenant) {
       setEditingSchema(tenant);
-      setCurrentTenantName(tenant_name!);
+      setCurrentTenantName(tenant_name || "");
       setSuperUserDialogOpen(true);
     }
   };
 
+  // ✅ open delete dialog instead of window.confirm
   const onUserDelete = (user: User) => {
-    console.log("User delete request:", user);
-    // TODO: Implement delete logic
+    setSelectedUser(user);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedUser?.username) {
+      showSnackbar("Invalid user selected", "error");
+      return;
+    }
+
+    showLoader();
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            query: `
+              mutation DeleteUser($input: DeleteUserInput!) {
+                deleteUser(input: $input)
+              }
+            `,
+            variables: {
+              input: { username: selectedUser.username },
+            },
+          }),
+        }
+      );
+
+      const result = await res.json();
+
+      if (result.errors) {
+        throw new Error(result.errors[0]?.message || "Failed to delete user");
+      }
+
+      if (result.data?.deleteUser) {
+        showSnackbar("User deleted successfully", "success");
+        if (tenant) {
+          fetchUsers(tenant, page, pageSize);
+        }
+      } else {
+        showSnackbar("Failed to delete user", "error");
+      }
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      showSnackbar("Error deleting user", "error");
+    } finally {
+      hideLoader();
+      setDeleteDialogOpen(false);
+      setSelectedUser(null);
+    }
   };
 
   return (
@@ -194,7 +248,6 @@ export default function UserManagement() {
       <GlobalSnackbar
         open={snackbar.open}
         message={snackbar.message}
-        severity={snackbar.severity}
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
       />
 
@@ -209,8 +262,14 @@ export default function UserManagement() {
         onUserEdit={onUserEdit}
         onUserDelete={onUserDelete}
         onCreateUser={onCreateUser}
-        onDialogOpen={() => setDialogOpen(true)} // ✅ add this
-        onDialogClose={() => setDialogOpen(false)} // ✅ add this
+        onDialogOpen={(user) => {
+          setSelectedUser(user);
+          setSuperUserDialogOpen(true);
+        }}
+        onDialogClose={() => {
+          setSelectedUser(null);
+          setSuperUserDialogOpen(false);
+        }}
       />
 
       <SuperUserDialog
@@ -240,6 +299,20 @@ export default function UserManagement() {
         }}
         setSnackbar={setSnackbar}
       />
+
+      {/* 🗑 Delete Confirmation Dialog */}
+      {selectedUser && (
+        <SuperUserDeleteDialog
+          open={deleteDialogOpen}
+          onClose={() => {
+            setDeleteDialogOpen(false);
+            setSelectedUser(null);
+          }}
+          onConfirm={handleConfirmDelete}
+          username={selectedUser.username}
+          userType={`${selectedUser.username} ${selectedUser.user_type}`}
+        />
+      )}
     </>
   );
 }

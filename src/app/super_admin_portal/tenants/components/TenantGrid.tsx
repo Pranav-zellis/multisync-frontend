@@ -152,7 +152,7 @@ export default function TenantGrid() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
-    pageSize: 5,
+    pageSize: 10,
   });
   const [cellModesModel, setCellModesModel] = useState<GridCellModesModel>({});
   const [totalCount, setTotalCount] = useState(0);
@@ -442,7 +442,6 @@ export default function TenantGrid() {
       <GlobalSnackbar
         open={snackbar.open}
         message={snackbar.message}
-        severity={snackbar.severity}
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
       />
 

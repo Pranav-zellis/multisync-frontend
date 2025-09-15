@@ -25,11 +25,8 @@ export default function Header({ isMobile, mobileOpen, setMobileOpen }: HeaderPr
         alt="Logo"
         width={220}
         height={22}
-        style={{
-          width: "auto",
-          height: "22px",
-          maxWidth: "220px",
-        }}
+        priority
+        style={{ height: "auto" }}
       />
       {isMobile && (
         <IconButton onClick={() => setMobileOpen(!mobileOpen)} size="large">

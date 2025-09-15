@@ -74,7 +74,7 @@ export default function TenantCard({ group, status, onClick }: Props) {
 
         <Box
           sx={{
-            bgcolor: status === "inactive" ? "#9E9E9E" : "#FF7043",
+            bgcolor: status === "inactive" ? "#ae5252ff" : "#FF7043",
             color: "#fff",
             px: 2,
             py: 0.5,

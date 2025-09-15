@@ -61,11 +61,12 @@ export default function GmailSplashLoader() {
       >
         {/* App Logo */}
         <Image
-          src="/images/ZELLIS_Multisync_dark.svg" // replace with your logo
+          src="/images/ZELLIS_Multisync_dark.svg"
           alt="App Logo"
           width={200}
-          height={150}
+          height={150} // can be placeholder, will override in style
           priority
+          style={{ height: "auto" }} // preserves aspect ratio
         />
 
         {/* Circular Progress */}

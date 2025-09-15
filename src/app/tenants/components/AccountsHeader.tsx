@@ -28,7 +28,7 @@ export default function AccountsHeader({ showAdmin }: AccountsHeaderProps) {
       });
       Cookies.remove("tenant", {
         path: "/", // same path
-        domain: ".zellis.io", // same domain
+        // domain: ".zellis.io", // same domain
       });
       router.push("/");
     } catch (error) {

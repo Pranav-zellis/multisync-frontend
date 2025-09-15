@@ -18,6 +18,7 @@ import TenantDialog from "./TenantDialog";
 import SuperUserDialog from "../../../components/SuperUserDialog";
 import { useAuth } from "@/context/auth-context";
 import { User } from "@/types/User";
+import SuperUserDeleteDialog from "@/super_admin_portal/admin_users/components/SuperUserDeleteDialog";
 
 interface Tenant {
   schema: string;
@@ -57,9 +58,20 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Delete confirmation dialog
+  // Tenant delete confirmation
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [confirmInput, setConfirmInput] = useState("");
+
+  // User dialogs
+  const [users, setUsers] = useState<User[]>([]);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+  // For SuperUserDeleteDialog
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const [currentTenantName, setCurrentTenantName] = useState(
     tenant.tenant_name
@@ -91,15 +103,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
 
   const [errors, setErrors] = useState({ tenantName: "", tenantStatus: "" });
 
-  // User data & paging moved here:
-  const [users, setUsers] = useState<User[]>([]);
-  const [page, setPage] = useState(0); // 0-based paging at client side
-  const [pageSize, setPageSize] = useState(10);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-
-  // Fetch users API call
+  // === Fetch Users API ===
   const fetchUsers = React.useCallback(
     async (tenantSchema: string, pageNum: number, limit: number) => {
       setLoading(true);
@@ -193,7 +197,6 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
     fetchActiveTenants();
   }, []);
 
-  // Refetch users when page or pageSize change, only if dialog is open and editing
   useEffect(() => {
     if (dialogOpen && isEditing) {
       fetchUsers(tenant.schema, page, pageSize);
@@ -204,14 +207,15 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
   const handlePageChange = (newPage: number) => setPage(newPage);
   const handlePageSizeChange = (newPageSize: number) => {
     setPageSize(newPageSize);
-    setPage(0); // Reset to first page on size change
+    setPage(0);
   };
 
-  // Menu event handlers
+  // Menu handlers
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) =>
     setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
 
+  // === User Actions ===
   const handleUserEdit = (user: User) => {
     setSelectedUser(user);
     setEditingSchema(tenant.schema);
@@ -220,10 +224,56 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
   };
 
   const handleUserDelete = (user: User) => {
-    console.log(user);
+    if (!user?.username) {
+      showSnackbar("Invalid user selected", "error");
+      return;
+    }
+    setSelectedUser(user);
+    setDeleteDialogOpen(true);
   };
 
-  // Tenant edit dialog open with reset and immediate fetch
+  const handleConfirmDeleteUser = async () => {
+    if (!selectedUser?.username) return;
+
+    try {
+      showLoader();
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            query: `
+            mutation DeleteUser($input: DeleteUserInput!) {
+              deleteUser(input: $input)
+            }
+          `,
+            variables: { input: { username: selectedUser.username } },
+          }),
+        }
+      );
+
+      const result = await res.json();
+      if (result.errors) throw new Error(result.errors[0]?.message);
+
+      if (result.data?.deleteUser) {
+        showSnackbar("User deleted successfully", "success");
+        fetchUsers(tenant.schema, page, pageSize);
+      } else {
+        showSnackbar("Failed to delete user", "error");
+      }
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      showSnackbar("Error deleting user", "error");
+    } finally {
+      hideLoader();
+      setDeleteDialogOpen(false);
+      setSelectedUser(null);
+    }
+  };
+
+  // === Tenant Actions ===
   const handleEdit = () => {
     setIsEditing(true);
     setCurrentTenantName(tenant.tenant_name);
@@ -231,7 +281,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
     setStatusInactive(tenant.tenant_status === "inactive");
     setStatusFlaggedToDelete(tenant.tenant_status === "flagged_to_delete");
     setErrors({ tenantName: "", tenantStatus: "" });
-    setPage(0); // reset paging
+    setPage(0);
     setDialogOpen(true);
     fetchUsers(tenant.schema, 0, pageSize);
     handleMenuClose();
@@ -241,7 +291,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
     setDialogOpen(false);
     setIsEditing(false);
     setErrors({ tenantName: "", tenantStatus: "" });
-    setUsers([]); // Optional: clear user list on close
+    setUsers([]);
   };
 
   const handleDialogSave = async () => {
@@ -268,18 +318,14 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
         str
           .toLowerCase()
           .trim()
-          .replace(/[^a-z0-9\s-]/g, "") // remove invalid chars
-          .replace(/\s+/g, "-") // replace spaces with dashes
-          .replace(/-+/g, "-"); // collapse multiple dashes
-
-      const slugifyFirstWords = (str: string) => {
-        const words = str.trim().split(/\s+/);
-        return slugify(words.join(" "));
-      };
+          .replace(/[^a-z0-9\s-]/g, "")
+          .replace(/\s+/g, "-")
+          .replace(/-+/g, "-");
 
       const slugifiedTenantName = currentTenantName
-        ? slugifyFirstWords(currentTenantName)
+        ? slugify(currentTenantName)
         : "";
+
       await updateTenant({
         schema: tenant.schema,
         tenant_name: slugifiedTenantName,
@@ -295,7 +341,6 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
     }
   };
 
-  // Confirm delete
   const confirmTenantDelete = async () => {
     try {
       showLoader();
@@ -316,7 +361,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
   };
 
   const handleCreateUser = () => {
-    setSelectedUser(null); // Clear if any user is selected
+    setSelectedUser(null);
     setEditingSchema(tenant.schema);
     setCurrentTenantName(tenant.tenant_name);
     setSuperUserDialogOpen(true);
@@ -328,7 +373,6 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
     handleMenuClose();
   };
 
-  // Menu action dispatcher
   const handleActionClick = (action: string) => {
     switch (action) {
       case "tenantEdit":
@@ -350,12 +394,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
   return (
     <>
       {/* Actions Icon */}
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        height="100%"
-      >
+      <Box display="flex" justifyContent="center" alignItems="center" height="100%">
         <Icon
           className="material-symbols-outlined"
           style={{ cursor: "pointer" }}
@@ -373,18 +412,14 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        <MenuItem onClick={() => handleActionClick("tenantEdit")}>
-          Edit
-        </MenuItem>
-        <MenuItem onClick={() => handleActionClick("tenantDelete")}>
-          Delete
-        </MenuItem>
+        <MenuItem onClick={() => handleActionClick("tenantEdit")}>Edit</MenuItem>
+        <MenuItem onClick={() => handleActionClick("tenantDelete")}>Delete</MenuItem>
         <MenuItem onClick={() => handleActionClick("createAdmin")}>
           Create New Admin User
         </MenuItem>
       </Menu>
 
-      {/* Edit Dialog */}
+      {/* Tenant Edit Dialog */}
       <TenantDialog
         open={dialogOpen}
         tenantName={currentTenantName}
@@ -421,7 +456,21 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
         activeTenants={activeTenants}
       />
 
-      {/* Confirm Delete Dialog */}
+      {/* Super User Delete Dialog */}
+      {selectedUser && (
+        <SuperUserDeleteDialog
+          open={deleteDialogOpen}
+          onClose={() => {
+            setDeleteDialogOpen(false);
+            setSelectedUser(null);
+          }}
+          onConfirm={handleConfirmDeleteUser}
+          username={selectedUser.username}
+          userType={`${selectedUser.username} ${selectedUser.user_type}`}
+        />
+      )}
+
+      {/* Tenant Confirm Delete Dialog */}
       <Dialog
         open={confirmDeleteOpen}
         onClose={() => {
@@ -436,8 +485,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
         <DialogContent>
           <DialogContentText>
             This is a destructive process. Upon confirming,{" "}
-            <strong>{tenant.tenant_name}</strong> tenant will be permanently
-            deleted.
+            <strong>{tenant.tenant_name}</strong> tenant will be permanently deleted.
             <br />
             <br />
             Please type <strong>{tenant.tenant_name}</strong> in the input below
@@ -470,6 +518,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
         </DialogActions>
       </Dialog>
 
+      {/* Super User Create/Edit Dialog */}
       <SuperUserDialog
         open={superUserDialogOpen}
         user={selectedUser}
@@ -479,7 +528,7 @@ const TenantActionsMenu: React.FC<TenantActionsMenuProps> = ({
             ? `Edit User for \"${currentTenantName}\"`
             : `Create User for \"${currentTenantName}\"`
         }
-        isEditing={Boolean(selectedUser)} // true if editing existing user
+        isEditing={Boolean(selectedUser)}
         usersRole={selectedUser?.user_type}
         button_title="User"
         groups={[currentTenantName]}

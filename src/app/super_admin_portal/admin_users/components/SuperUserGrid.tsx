@@ -216,7 +216,6 @@ export default function SuperUserGrid() {
       <GlobalSnackbar
         open={snackbar.open}
         message={snackbar.message}
-        severity={snackbar.severity}
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
       />
 

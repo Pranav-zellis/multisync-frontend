@@ -78,7 +78,10 @@ export default function SuperUserDeleteDialog({
       method: "GET",
       credentials: "include",
     });
-    Cookies.remove("tenant", { path: "/" });
+    Cookies.remove("tenant", {
+      path: "/", // same path
+      domain: ".zellis.io", // same domain
+    });
     router.push("/");
   }, [router]);
 
@@ -140,10 +143,21 @@ export default function SuperUserDeleteDialog({
 
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Box display="flex" gap={1} width="100%" justifyContent="flex-end">
-            <Button onClick={handleClose} variant="outlined" color="inherit" fullWidth>
+            <Button
+              onClick={handleClose}
+              variant="outlined"
+              color="inherit"
+              fullWidth
+            >
               Cancel
             </Button>
-            <Button onClick={handleConfirm} color="error" variant="contained" disabled={!isMatch} fullWidth>
+            <Button
+              onClick={handleConfirm}
+              color="error"
+              variant="contained"
+              disabled={!isMatch}
+              fullWidth
+            >
               Confirm Delete
             </Button>
           </Box>
@@ -166,7 +180,12 @@ export default function SuperUserDeleteDialog({
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleLogout} color="error" variant="contained" fullWidth>
+          <Button
+            onClick={handleLogout}
+            color="error"
+            variant="contained"
+            fullWidth
+          >
             Logout Now
           </Button>
         </DialogActions>

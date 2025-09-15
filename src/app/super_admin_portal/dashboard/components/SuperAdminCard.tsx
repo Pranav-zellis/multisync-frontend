@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Card, Typography, Chip, Box, Button } from "@mui/material";
-import SuperUserDialog from "../../admin_users/components/SuperUserDialog";
+import SuperUserDialog from "@/components/SuperUserDialog";
 import { useAuth } from "@/context/auth-context";
 
 type SuperAdmin = {
@@ -24,8 +24,8 @@ export default function SuperAdminCard() {
   const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
   const { user } = useAuth();
 
-  console.log("user 12");
-  console.log(user);
+  // console.log("user 12");
+  // console.log(user);
 
   // Fetch Super Admins
   const fetchSuperAdmins = useCallback(async () => {

@@ -1,7 +1,13 @@
 "use client";
 
 import React from "react";
-import { Box, TextField, Button, Typography } from "@mui/material";
+import {
+  Box,
+  TextField,
+  Button,
+  Typography,
+  InputAdornment,
+} from "@mui/material";
 
 interface TenantToolbarProps {
   search: string;
@@ -17,8 +23,17 @@ export default function TenantToolbar({
   return (
     <Box mb={2} display="flex" flexDirection="column" gap={2}>
       {/* Header Row */}
-      <Box display="flex" flexDirection={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ sm: "center" }} gap={1}>
-        <Typography variant="h6" sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }}>
+      <Box
+        display="flex"
+        flexDirection={{ xs: "column", sm: "row" }}
+        justifyContent="space-between"
+        alignItems={{ sm: "center" }}
+        gap={1}
+      >
+        <Typography
+          variant="h6"
+          sx={{ fontSize: { xs: "1rem", sm: "1.25rem" } }}
+        >
           Tenant List
         </Typography>
 
@@ -34,13 +49,51 @@ export default function TenantToolbar({
             size="small"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            fullWidth={true}
-            sx={{ maxWidth: { sm: "200px" } }}
+            fullWidth
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <span className="material-symbols-outlined">search</span>
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              borderRadius: "50px", // fully rounded
+              backgroundColor: "#f1f3f4", // light gray like Gmail
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "50px",
+                paddingRight: "8px",
+                "& fieldset": {
+                  border: "none",
+                },
+                "&:hover fieldset": {
+                  border: "none",
+                },
+                "&.Mui-focused fieldset": {
+                  border: "none",
+                },
+              },
+            }}
           />
+
           <Button
             variant="contained"
             onClick={onCreateClick}
-            sx={{ whiteSpace: "nowrap" }}
+            sx={{
+              borderRadius: "20px", // rounded
+              textTransform: "none", // preserve normal casing
+              fontWeight: 500,
+              color: "#fff",
+              px: 5, // horizontal padding
+              py: 1, // vertical padding
+              boxShadow:
+                "0 1px 3px rgba(60,64,67,0.3), 0 4px 8px rgba(60,64,67,0.15)",
+              "&:hover": {
+                boxShadow:
+                  "0 2px 4px rgba(60,64,67,0.3), 0 6px 12px rgba(60,64,67,0.2)",
+              },
+              whiteSpace: "nowrap",
+            }}
           >
             + Create Tenant
           </Button>

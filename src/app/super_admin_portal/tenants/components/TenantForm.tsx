@@ -8,11 +8,21 @@ import {
   Radio,
   RadioGroup,
   FormControlLabel,
+  // Checkbox,
+  // Select,
+  // MenuItem,
+  // OutlinedInput,
+  // Chip,
+  // FormHelperText,
+  // InputLabel,
 } from "@mui/material";
+// import { SelectChangeEvent } from "@mui/material/Select";
 
 interface TenantFormProps {
   tenantName: string;
   setTenantName: (name: string) => void;
+  selectedTenants: string[]; // for multi-select values
+  setSelectedTenants: (tenants: string[]) => void;
   statusActive: boolean;
   setStatusActive: (val: boolean) => void;
   statusInactive: boolean;
@@ -22,19 +32,35 @@ interface TenantFormProps {
   errors: {
     tenantName: string;
     tenantStatus: string;
+    selectedTenants?: string;
   };
   setErrors: React.Dispatch<
     React.SetStateAction<{
       tenantName: string;
       tenantStatus: string;
+      selectedTenants?: string;
     }>
   >;
   isEditing: boolean;
+  activeTenants?: { tenant_name: string; schema: string }[]; // list of tenants for multi-select
 }
+
+// const ITEM_HEIGHT = 48;
+// const ITEM_PADDING_TOP = 8;
+// const MenuProps = {
+//   PaperProps: {
+//     style: {
+//       maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
+//       width: 250,
+//     },
+//   },
+// };
 
 export default function TenantForm({
   tenantName,
   setTenantName,
+  // selectedTenants,
+  // setSelectedTenants,
   statusActive,
   setStatusActive,
   statusInactive,
@@ -44,7 +70,24 @@ export default function TenantForm({
   errors,
   setErrors,
   isEditing,
-}: TenantFormProps) {
+}: // activeTenants,
+TenantFormProps) {
+  // const handleSelectedTenantsChange = (event: SelectChangeEvent<string[]>) => {
+  //   const value = event.target.value as string[];
+  //   setSelectedTenants(value);
+
+  //   if (value.length > 0) {
+  //     setErrors((prev) => ({ ...prev, selectedTenants: "" }));
+  //   }
+  // };
+
+  // console.log(activeTenants);
+  // const filteredTenants = React.useMemo(() => {
+  //   if (tenantName && tenantName.trim() !== "") {
+  //     return (activeTenants ?? []).filter((t) => t.tenant_name !== tenantName);
+  //   }
+  //   return activeTenants ?? [];
+  // }, [activeTenants, tenantName]);
   // slugify function
   const slugify = (str: string) =>
     str
@@ -63,6 +106,7 @@ export default function TenantForm({
 
   return (
     <Box display="flex" flexDirection="column" gap={3}>
+      {/* OLD: Tenant Name Text Input (optional) */}
       <TextField
         fullWidth
         label="Tenant Name"
@@ -80,7 +124,12 @@ export default function TenantForm({
           errors.tenantName ? (
             errors.tenantName
           ) : tenantName ? (
-            <Box display="flex" alignItems="center" color="success.main" gap={0.2}>
+            <Box
+              display="flex"
+              alignItems="center"
+              color="success.main"
+              gap={0.2}
+            >
               <span
                 className="material-symbols-outlined"
                 style={{ fontSize: "15px" }}
@@ -93,9 +142,15 @@ export default function TenantForm({
             </Box>
           ) : null
         }
-        FormHelperTextProps={{ sx: { ml: 0 } }}
+        FormHelperTextProps={{
+          sx: { ml: 0 },
+          component: "div", // 👈 ensures no <p> wrapping
+        }}
       />
 
+      {/* NEW: Multi-select box for active tenants */}
+
+      {/* Tenant Status Checkboxes (unchanged) */}
       <Box>
         <Typography fontWeight={500} mb={0.5}>
           Tenant Status
@@ -120,7 +175,11 @@ export default function TenantForm({
           }}
         >
           <FormControlLabel value="active" control={<Radio />} label="Active" />
-          <FormControlLabel value="inactive" control={<Radio />} label="Inactive" />
+          <FormControlLabel
+            value="inactive"
+            control={<Radio />}
+            label="Inactive"
+          />
           {isEditing && (
             <FormControlLabel
               value="flagged_to_delete"
@@ -135,6 +194,42 @@ export default function TenantForm({
           </Typography>
         )}
       </Box>
+
+      {/* <Box>
+        <InputLabel id="select-link-tenants-label" sx={{ mb: 1 }}>
+          Select Link Tenants
+        </InputLabel>
+        <Select
+          multiple
+          fullWidth
+          label="Favorite Animal"
+          value={selectedTenants}
+          onChange={handleSelectedTenantsChange}
+          input={<OutlinedInput label="Select Link Tenants" />}
+          renderValue={(selected) => (
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+              {(selected as string[]).map((value) => (
+                <Chip key={value} label={value} />
+              ))}
+            </Box>
+          )}
+          MenuProps={MenuProps}
+          error={Boolean(errors.selectedTenants)}
+        >
+          {filteredTenants.map((tenant) => (
+            <MenuItem key={tenant.schema} value={tenant.tenant_name}>
+              <Checkbox
+                checked={selectedTenants.indexOf(tenant.tenant_name) > -1}
+              />
+              <Typography>{tenant.tenant_name}</Typography>
+            </MenuItem>
+          ))}
+        </Select>
+
+        {errors.selectedTenants && (
+          <FormHelperText error>{errors.selectedTenants}</FormHelperText>
+        )}
+      </Box> */}
     </Box>
   );
 }

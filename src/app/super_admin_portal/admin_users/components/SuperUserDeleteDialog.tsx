@@ -10,18 +10,28 @@ import {
   TextField,
   Box,
   Alert,
+  Slide,
 } from "@mui/material";
-import { useState, useEffect, useCallback } from "react";
-
+import { useState, useEffect, useCallback, forwardRef } from "react";
+import { TransitionProps } from "@mui/material/transitions";
 import { useAuth } from "@/context/auth-context";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
 
+// ✅ Gmail-style Transition
+const Transition = forwardRef(function Transition(
+  props: TransitionProps & { children: React.ReactElement },
+  ref: React.Ref<unknown>
+) {
+  return <Slide direction="up" ref={ref} {...props} />;
+});
+
 interface Props {
   open: boolean;
   onClose: () => void;
-  onConfirm: () => Promise<void>; // ensure delete API is async
+  onConfirm: () => Promise<void>;
   username: string;
+  userType?: string;
 }
 
 export default function SuperUserDeleteDialog({
@@ -29,19 +39,26 @@ export default function SuperUserDeleteDialog({
   onClose,
   onConfirm,
   username,
+  userType,
 }: Props) {
   const [confirmation, setConfirmation] = useState("");
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const [countdown, setCountdown] = useState(5);
+  const [instantClose, setInstantClose] = useState(false);
 
   const { user } = useAuth();
   const router = useRouter();
   const isMatch = confirmation.trim() === username;
   const isSelfDelete = user?.username === username;
+  const displayUserType = userType ?? "Super Admin";
 
   const handleClose = () => {
     setConfirmation("");
+    setInstantClose(true); // bypass animation
     onClose();
+
+    // reset instantClose after short delay
+    setTimeout(() => setInstantClose(false), 250);
   };
 
   const handleConfirm = async () => {
@@ -51,6 +68,8 @@ export default function SuperUserDeleteDialog({
     if (isSelfDelete) {
       setShowLogoutDialog(true);
       setCountdown(5);
+    } else {
+      handleClose();
     }
   };
 
@@ -59,22 +78,17 @@ export default function SuperUserDeleteDialog({
       method: "GET",
       credentials: "include",
     });
-    Cookies.remove("tenant", {
-      path: "/",
-      domain: ".zellis.io",
-    });
+    Cookies.remove("tenant", { path: "/" });
     router.push("/");
-  }, [router]); // ✅ add router to deps
+  }, [router]);
 
-  // countdown effect for logout
+  // countdown for auto logout
   useEffect(() => {
     if (!showLogoutDialog) return;
-
     if (countdown === 0) {
       handleLogout();
       return;
     }
-
     const timer = setTimeout(() => setCountdown((prev) => prev - 1), 1000);
     return () => clearTimeout(timer);
   }, [showLogoutDialog, countdown, handleLogout]);
@@ -87,14 +101,19 @@ export default function SuperUserDeleteDialog({
         onClose={handleClose}
         maxWidth="xs"
         fullWidth
+        keepMounted
+        TransitionComponent={instantClose ? Transition : Transition}
         PaperProps={{
           sx: {
             width: 500,
             maxWidth: "100%",
+            borderRadius: 3,
+            overflow: "hidden",
+            boxShadow: "0px 8px 28px rgba(0,0,0,0.35)",
           },
         }}
       >
-        <DialogTitle>Delete Super Admin</DialogTitle>
+        <DialogTitle>Delete {displayUserType}</DialogTitle>
         <DialogContent>
           {isSelfDelete && (
             <Alert severity="warning" sx={{ mb: 2 }}>
@@ -102,15 +121,13 @@ export default function SuperUserDeleteDialog({
               you will be logged out automatically.
             </Alert>
           )}
-
           <Typography sx={{ mb: 2 }}>
-            This is a destructive process. Upon confirming,
-            <strong> {username}</strong> will be deleted permanently.
+            This is a destructive process. Upon confirming,{" "}
+            <strong>{username}</strong> will be deleted permanently.
             <br />
             <br />
             Please type <strong>{username}</strong> below to confirm.
           </Typography>
-
           <TextField
             autoFocus
             fullWidth
@@ -123,22 +140,10 @@ export default function SuperUserDeleteDialog({
 
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Box display="flex" gap={1} width="100%" justifyContent="flex-end">
-            <Button
-              onClick={handleClose}
-              variant="outlined"
-              color="inherit"
-              fullWidth
-              disabled={isSelfDelete} // ❌ prevent closing if self delete
-            >
+            <Button onClick={handleClose} variant="outlined" color="inherit" fullWidth>
               Cancel
             </Button>
-            <Button
-              onClick={handleConfirm}
-              color="error"
-              variant="contained"
-              disabled={!isMatch}
-              fullWidth
-            >
+            <Button onClick={handleConfirm} color="error" variant="contained" disabled={!isMatch} fullWidth>
               Confirm Delete
             </Button>
           </Box>
@@ -146,7 +151,13 @@ export default function SuperUserDeleteDialog({
       </Dialog>
 
       {/* 🚀 Logout Countdown Dialog */}
-      <Dialog open={showLogoutDialog} maxWidth="xs" fullWidth>
+      <Dialog
+        open={showLogoutDialog}
+        maxWidth="xs"
+        fullWidth
+        keepMounted
+        TransitionComponent={Transition}
+      >
         <DialogTitle>Logging Out</DialogTitle>
         <DialogContent>
           <Typography>
@@ -155,12 +166,7 @@ export default function SuperUserDeleteDialog({
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button
-            onClick={handleLogout}
-            color="error"
-            variant="contained"
-            fullWidth
-          >
+          <Button onClick={handleLogout} color="error" variant="contained" fullWidth>
             Logout Now
           </Button>
         </DialogActions>

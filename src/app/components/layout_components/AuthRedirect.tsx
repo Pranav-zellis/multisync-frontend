@@ -51,21 +51,25 @@ export default function AuthRedirect({
     const isSuperAdmin = role === "Super Admin";
     const isAdminRoute = pathname.startsWith("/super_admin_portal");
 
+    // Start loader
     if (!didStart.current) {
       showLoader();
       didStart.current = true;
     }
 
+    // Hide loader immediately once ready
     if (didStart.current) {
       hideLoader();
       didStart.current = true;
     }
 
+    // Not logged in → redirect to login
     if (!user && pathname !== "/") {
       window.location.href = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`;
       return;
     }
 
+    // Block non-super admins from super_admin_portal
     if (isAdminRoute && !isSuperAdmin) {
       router.replace("/404");
       return;
@@ -81,38 +85,40 @@ export default function AuthRedirect({
           role: user!.customAttributes["custom:users_role"],
         };
 
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({
-              query: `
-                query GetTenantsBySchemas($user: UserInput!) {
-                  tenantsBySchemas(user: $user) {
-                    schema
-                    tenant_name
-                    tenant_status
-                  }
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            query: `
+              query GetTenantsBySchemas($user: UserInput!) {
+                tenantsBySchemas(user: $user) {
+                  schema
+                  tenant_name
+                  tenant_status
                 }
-              `,
-              variables: { user: userInput },
-            }),
-          }
-        );
+              }
+            `,
+            variables: { user: userInput },
+          }),
+        });
 
         const json = await res.json();
         const tenant_id = json.data?.tenantsBySchemas?.[0]?.schema;
 
         if (tenant_id) {
-          const maxAgeDays = (45 * 60 * 1000) / (1000 * 60 * 60 * 24); // 45 min
+          // Save tenant in cookie (45 mins)
+          const maxAgeDays = 45 / (24 * 60); // 45 minutes in days
           Cookies.set("tenant", tenant_id, {
             path: "/",
             sameSite: "lax",
             expires: maxAgeDays,
           });
-          router.replace("/dashboard");
+
+          // Redirect if user is on /tenants
+          if (pathname === "/tenants") {
+            router.replace("/dashboard");
+          }
         } else {
           console.error("No tenants found for user.");
         }
@@ -121,10 +127,12 @@ export default function AuthRedirect({
       }
     }
 
+    // If user has only one group, fetch tenants and redirect if needed
     if (onlyOneGroup && pathname !== "/dashboard") {
       fetchTenants();
     }
 
+    // Mark content ready after a short delay
     const timer = setTimeout(() => {
       if (!isCancelled) {
         setContentReady(true);

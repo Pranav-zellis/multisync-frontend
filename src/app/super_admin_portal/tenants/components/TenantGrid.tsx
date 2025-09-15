@@ -23,7 +23,7 @@ import {
 } from "../ts/schema";
 import { useGlobalLoader } from "@/context/loader-context";
 import TenantActionsMenu, { UpdateTenantInput } from "./TenantActions";
-import SuperUserDialog from "../../admin_users/components/SuperUserDialog";
+import SuperUserDialog from "../../../components/SuperUserDialog";
 import { useAuth } from "@/context/auth-context";
 import { useIsMounted } from "@/hooks/useIsMounted";
 
@@ -145,10 +145,14 @@ export default function TenantGrid() {
   const isMounted = useIsMounted();
   const isClient = useRef(false);
 
+  const [activeTenants, setActiveTenants] = useState<
+    { tenant_name: string; schema: string }[]
+  >([]);
+
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
     page: 0,
-    pageSize: 5,
+    pageSize: 10,
   });
   const [cellModesModel, setCellModesModel] = useState<GridCellModesModel>({});
   const [totalCount, setTotalCount] = useState(0);
@@ -183,6 +187,37 @@ export default function TenantGrid() {
     },
     [snackbar]
   );
+
+  useEffect(() => {
+    async function fetchActiveTenants() {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              query: `
+              query {
+                tenants(skip: 0, take: 100) {
+                  activeTenants {
+                    tenant_name
+                    schema
+                  }
+                }
+              }
+            `,
+            }),
+          }
+        );
+        const json = await res.json();
+        setActiveTenants(json.data.tenants.activeTenants || []);
+      } catch (error) {
+        console.error("Failed to fetch active tenants:", error);
+      }
+    }
+    fetchActiveTenants();
+  }, []);
 
   // Fetch tenants data
   const fetchTenants = useCallback(async () => {
@@ -382,7 +417,8 @@ export default function TenantGrid() {
     { field: "last_modified", headerName: "Last Modified", flex: 1 },
     {
       field: "actions",
-      headerName: "",
+      type: "actions",
+      headerName: "Actions",
       flex: 0.3,
       sortable: false,
       filterable: false,
@@ -406,7 +442,6 @@ export default function TenantGrid() {
       <GlobalSnackbar
         open={snackbar.open}
         message={snackbar.message}
-        severity={snackbar.severity}
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
       />
 
@@ -465,18 +500,17 @@ export default function TenantGrid() {
         onClose={() => setDialogOpen(false)}
         onSave={handleSave}
         isEditing={isEditing}
+        activeTenants={activeTenants}
       />
 
       <SuperUserDialog
         open={superUserDialogOpen}
         user={selectedUser}
         inviterName={user?.username || ""}
-        title={
-          isEditing ? "Edit Admin User" : `Create Admin for \"${tenantName}\"`
-        }
+        title={isEditing ? "Edit User" : `Create User for \"${tenantName}\"`}
         isEditing={false}
-        usersRole="Admin"
-        button_title="Admin"
+        usersRole=""
+        button_title="User"
         groups={[tenantName]}
         tenantId={editingSchema}
         onClose={() => {

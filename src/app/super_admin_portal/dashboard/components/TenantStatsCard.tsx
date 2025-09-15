@@ -49,7 +49,42 @@ export default function TenantStatsCard() {
     severity: "success",
   });
 
+  const [activeTenants, setActiveTenants] = useState<
+    { tenant_name: string; schema: string }[]
+  >([]);
+
   const router = useRouter();
+
+  useEffect(() => {
+    async function fetchActiveTenants() {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/graphql`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              query: `
+              query {
+                tenants(skip: 0, take: 100) {
+                  activeTenants {
+                    tenant_name
+                    schema
+                  }
+                }
+              }
+            `,
+            }),
+          }
+        );
+        const json = await res.json();
+        setActiveTenants(json.data.tenants.activeTenants || []);
+      } catch (error) {
+        console.error("Failed to fetch active tenants:", error);
+      }
+    }
+    fetchActiveTenants();
+  }, []);
 
   // Fetch tenant stats
   const fetchTenantStats = useCallback(() => {
@@ -155,7 +190,6 @@ export default function TenantStatsCard() {
       <GlobalSnackbar
         open={snackbar.open}
         message={snackbar.message}
-        severity={snackbar.severity}
         onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
       />
 
@@ -251,6 +285,7 @@ export default function TenantStatsCard() {
         onClose={() => setDialogOpen(false)}
         onSave={handleSave}
         isEditing={isEditing}
+        activeTenants={activeTenants}
       />
     </>
   );

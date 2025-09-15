@@ -17,6 +17,8 @@ export default function Home() {
       return;
     }
     const token = Cookies.get("id_token");
+    // console.log('token');
+    // console.log(token);
     if (user && token) {
       const tenant = Cookies.get("tenant");
       if (tenant) {

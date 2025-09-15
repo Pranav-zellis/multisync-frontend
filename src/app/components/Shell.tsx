@@ -113,7 +113,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     showLoader();
     Cookies.remove("tenant", {
       path: "/", // same path
-      // domain: ".zellis.io", // same domain
+      domain: ".zellis.io", // same domain
     });
     window.location.href = "/";
   };

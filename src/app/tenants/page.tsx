@@ -106,7 +106,7 @@ export default function AccountsPage() {
 
     const cookieOptions = {
       path: "/",
-      // domain: ".zellis.io", // ✅ cookie available on all subdomains
+      domain: ".zellis.io", // ✅ cookie available on all subdomains
       sameSite: "lax" as const, // ✅ type-safe
     };
 

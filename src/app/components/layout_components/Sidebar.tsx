@@ -350,7 +350,10 @@ export default function Sidebar({
                 onClick={() => {
                   handleClose();
                   showLoader();
-                  Cookies.remove("tenant", { path: "/" });
+                  Cookies.remove("tenant", {
+                    path: "/", // same path
+                    domain: ".zellis.io", // same domain
+                  });
                   router.push("/tenants");
                 }}
               >
